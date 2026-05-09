@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DBSNAP_VERSION, writeMetadata } from "@canblmz1/dbsnap-core";
-import { createProgram } from "../src/index.js";
+import { createProgram, isDirectCliInvocation } from "../src/index.js";
 
 let originalCwd: string;
 let originalDatabaseUrl: string | undefined;
@@ -64,6 +65,7 @@ describe("CLI", () => {
     expect(output).toContain("Time travel for your local development database");
     expect(output).toContain("save");
     expect(output).toContain("restore");
+    expect(output).toContain("verify");
   });
 
   it("prints version", async () => {
@@ -79,6 +81,23 @@ describe("CLI", () => {
       code: "commander.version"
     });
     expect(output.trim()).toBe(DBSNAP_VERSION);
+  });
+
+  it("detects direct CLI invocation through an npm bin symlink", async () => {
+    const root = await tempProject();
+    const entry = path.join(root, "dist", "index.js");
+    const bin = path.join(root, "node_modules", ".bin", process.platform === "win32" ? "dbsnap.cmd-target" : "dbsnap");
+    await fs.mkdir(path.dirname(entry), { recursive: true });
+    await fs.mkdir(path.dirname(bin), { recursive: true });
+    await fs.writeFile(entry, "#!/usr/bin/env node\n", "utf8");
+
+    try {
+      await fs.symlink(entry, bin);
+    } catch {
+      return;
+    }
+
+    expect(isDirectCliInvocation(pathToFileURL(entry).href, bin)).toBe(true);
   });
 
   it("prints doctor JSON", async () => {
@@ -163,13 +182,31 @@ describe("CLI", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       sizeBytes: 1,
       source: "dev.db",
-      sourceHash: "abc",
       dbsnapVersion: DBSNAP_VERSION
     });
     await write(root, ".dbsnaps/local/database.sqlite", "data");
     await expect(createProgram().parseAsync(["node", "dbsnap", "--json", "restore", "local"])).rejects.toThrow(
       /without --yes/
     );
+  });
+
+  it("blocks different-target restore in non-interactive JSON mode", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, "dev.db", "current");
+    await writeMetadata(path.join(root, ".dbsnaps", "other"), {
+      name: "other",
+      databaseType: "sqlite",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 4,
+      source: "other.db",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+    await write(root, ".dbsnaps/other/database.sqlite", "data");
+    await expect(
+      createProgram().parseAsync(["node", "dbsnap", "--json", "--yes", "restore", "other"])
+    ).rejects.toThrow(/different database target/);
   });
 
   it("requires --yes for JSON delete because delete is destructive", async () => {
@@ -199,6 +236,28 @@ describe("CLI", () => {
     expect(JSON.parse(output).metadata.source).toContain("***");
     expect(output).not.toContain("secret");
     expect(output).not.toContain("token=abc");
+  });
+
+  it("prints verify JSON for snapshot artifact checks", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+    await writeMetadata(path.join(root, ".dbsnaps", "local"), {
+      name: "local",
+      databaseType: "sqlite",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 4,
+      source: "dev.db",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+    await write(root, ".dbsnaps/local/database.sqlite", "data");
+    const output = await captureStdout(async () => {
+      await createProgram().parseAsync(["node", "dbsnap", "--json", "verify", "local"]);
+    });
+    const parsed = JSON.parse(output);
+    expect(parsed.ok).toBe(true);
+    expect(
+      parsed.checks.some((check: { name: string; status: string }) => check.name === "metadata" && check.status === "pass")
+    ).toBe(true);
   });
 
   it("enforces safety for restore through the CLI command path", async () => {

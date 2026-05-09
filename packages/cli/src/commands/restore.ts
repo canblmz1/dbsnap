@@ -19,6 +19,34 @@ export function registerRestoreCommand(program: Command): void {
       }
 
       const dryRunResult = await restoreSnapshot(snapshotName, { ...options, dryRun: true });
+      if (dryRunResult.target && !dryRunResult.target.matches && !options.allowDifferentTarget) {
+        if (options.json && !options.dryRun) {
+          throw new UserError(
+            "Refusing to restore a snapshot saved from a different database target in --json mode. Re-run with --allow-different-target only if this is intentional.",
+            {
+              code: "DIFFERENT_TARGET_CONFIRMATION_REQUIRED",
+              details: { target: dryRunResult.target }
+            }
+          );
+        }
+        if (!options.json) {
+          reporter.warn("Snapshot source differs from the current restore target:");
+          reporter.table([
+            {
+              snapshotSource: dryRunResult.target.snapshotSource,
+              currentTarget: dryRunResult.target.currentSource
+            }
+          ]);
+        }
+        if (!options.dryRun && !options.json) {
+          const accepted = await confirm("Restore to this different target?");
+          if (!accepted) {
+            reporter.info("Restore cancelled.");
+            return;
+          }
+          options.allowDifferentTarget = true;
+        }
+      }
       if (options.json && !options.yes && !options.dryRun) {
         throw new UserError("Refusing to restore in --json mode without --yes. Re-run with --yes or --dry-run.", {
           code: "CONFIRMATION_REQUIRED"

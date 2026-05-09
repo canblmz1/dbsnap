@@ -1,6 +1,6 @@
 {
   "name": "dbsnap-repo",
-  "version": "0.9.0-beta.3",
+  "version": "0.9.0-beta.4",
   "private": true,
   "description": "Time travel for your local development database.",
   "license": "MIT",
@@ -9,6 +9,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
+    "pack:smoke": "node scripts/pack-smoke.mjs",
     "dev": "pnpm --filter @canblmz1/dbsnap dev"
   },
   "devDependencies": {

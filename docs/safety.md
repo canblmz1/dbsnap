@@ -23,6 +23,20 @@ dbsnap restore snapshot-name --force-i-know-what-i-am-doing
 
 Use the override only for disposable local databases.
 
+## Snapshot Target Matching
+
+dbsnap stores a local source identity in snapshot metadata. Restore compares that identity with the current `DATABASE_URL` target.
+
+If the snapshot was created from a different SQLite path or PostgreSQL database target, restore is blocked in non-interactive mode and asks for confirmation in the CLI. This catches mistakes such as restoring `app_dev` into `other_dev`.
+
+Use this only when the target mismatch is intentional:
+
+```bash
+dbsnap restore snapshot-name --allow-different-target --yes
+```
+
+The remote/risky database guard and the different-target guard are separate. `--force-i-know-what-i-am-doing` does not bypass target mismatch protection.
+
 ## Secret Redaction
 
 dbsnap redacts database passwords and token-like query parameters in normal and debug output.

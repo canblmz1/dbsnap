@@ -15,6 +15,7 @@ export function readCliOptions(command: Command): CliOptions {
     snapshotsDir?: string;
     docker?: boolean;
     forceIKnowWhatIAmDoing?: boolean;
+    allowDifferentTarget?: boolean;
   }>();
 
   return {
@@ -27,6 +28,7 @@ export function readCliOptions(command: Command): CliOptions {
     verbose: Boolean(opts.verbose),
     docker: opts.docker === true,
     noDocker: opts.docker === false,
-    force: Boolean(opts.forceIKnowWhatIAmDoing)
+    force: Boolean(opts.forceIKnowWhatIAmDoing),
+    allowDifferentTarget: Boolean(opts.allowDifferentTarget)
   };
 }

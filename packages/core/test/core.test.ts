@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { Readable, Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import {
   assertLocalDatabase,
+  assertAllowedCommand,
   assertSafeArgs,
   buildDockerPgDumpArgs,
   buildDockerPgRestoreArgs,
@@ -25,10 +27,12 @@ import {
   redactSecrets,
   renameSnapshot,
   restoreSnapshot,
+  runSpawn,
   saveSnapshot,
   SafetyError,
   SnapshotError,
   validateSnapshotName,
+  verifySnapshot,
   writeMetadata,
   DBSNAP_VERSION
 } from "../src/index.js";
@@ -169,6 +173,22 @@ describe("SQLite snapshot lifecycle", () => {
     expect(afterDelete.snapshots).toHaveLength(0);
   });
 
+  it("verifies snapshot metadata and artifacts", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, "dev.db", "users=10");
+    await saveSnapshot("verify-me", { projectRoot: root });
+
+    const result = await verifySnapshot("verify-me", { projectRoot: root });
+    expect(result.ok).toBe(true);
+    expect(result.checks.find((check) => check.name === "metadata")?.status).toBe("pass");
+
+    await write(root, ".dbsnaps/verify-me/database.sqlite", "changed-size");
+    const failed = await verifySnapshot("verify-me", { projectRoot: root });
+    expect(failed.ok).toBe(false);
+    expect(failed.checks.find((check) => check.name === "size")?.status).toBe("fail");
+  });
+
   it("saves and restores SQLite WAL sidecar files", async () => {
     const root = await tempProject();
     await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
@@ -244,6 +264,39 @@ describe("SQLite snapshot lifecycle", () => {
     await write(root, ".dbsnaps/bad/metadata.json", "{nope");
     await expect(listSnapshots({ projectRoot: root })).rejects.toThrow(/metadata/);
   });
+
+  it("blocks restore to a different SQLite target unless explicitly allowed", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, "dev.db", "saved");
+    await saveSnapshot("local", { projectRoot: root });
+
+    await write(root, ".env", "DATABASE_URL=file:./other.db\n");
+    await write(root, "other.db", "other");
+    const dryRun = await restoreSnapshot("local", { projectRoot: root, dryRun: true });
+    expect(dryRun.target?.matches).toBe(false);
+    await expect(restoreSnapshot("local", { projectRoot: root, yes: true })).rejects.toThrow(/different database target/);
+
+    await restoreSnapshot("local", { projectRoot: root, yes: true, allowDifferentTarget: true });
+    await expect(fs.readFile(path.join(root, "other.db"), "utf8")).resolves.toBe("saved");
+  });
+
+  it("requires different-target permission even when force bypasses remote safety", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=postgres://localhost/other_dev\n");
+    await writeMetadata(path.join(root, ".dbsnaps", "pg"), {
+      name: "pg",
+      databaseType: "postgres",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 4,
+      source: "localhost:5432/app_dev",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+    await write(root, ".dbsnaps/pg/dump.pgcustom", "dump");
+    await expect(restoreSnapshot("pg", { projectRoot: root, force: true, yes: true })).rejects.toThrow(
+      /different database target/
+    );
+  });
 });
 
 describe("PostgreSQL command builders", () => {
@@ -270,8 +323,71 @@ describe("PostgreSQL command builders", () => {
     expect(buildPgRestoreArgs(parsed, "/tmp/dump.pgcustom")).toContain("--no-owner");
   });
 
-  it("rejects shell metacharacters in spawn args", () => {
-    expect(() => assertSafeArgs(["safe", "value; rm -rf /"])).toThrow(/shell metacharacters/);
+  it("allows shell metacharacters as literal args with shell:false but rejects NUL bytes", () => {
+    expect(() => assertSafeArgs(["C:\\tmp\\name with spaces & symbols"])).not.toThrow();
+    expect(() => assertSafeArgs(["bad\0arg"])).toThrow(/NUL byte/);
+  });
+
+  it("rejects unsupported commands by default", () => {
+    expect(() => assertAllowedCommand("sh")).toThrow(/unsupported command/);
+  });
+});
+
+describe("spawn helper", () => {
+  it("waits for output stream finish before resolving", async () => {
+    let finished = false;
+    const output = new Writable({
+      write(_chunk, _encoding, callback) {
+        setTimeout(callback, 20);
+      }
+    });
+    output.on("finish", () => {
+      finished = true;
+    });
+    await runSpawn(process.execPath, ["-e", "process.stdout.write('ok')"], {
+      output,
+      allowedCommands: ["node"]
+    });
+    expect(finished).toBe(true);
+  });
+
+  it("propagates output stream errors", async () => {
+    const output = new Writable({
+      write(_chunk, _encoding, callback) {
+        callback(new Error("output failed"));
+      }
+    });
+    await expect(
+      runSpawn(process.execPath, ["-e", "process.stdout.write('ok')"], { output, allowedCommands: ["node"] })
+    ).rejects.toThrow(/output failed/);
+  });
+
+  it("propagates input stream errors", async () => {
+    const input = new Readable({
+      read() {
+        this.destroy(new Error("input failed"));
+      }
+    });
+    await expect(
+      runSpawn(process.execPath, ["-e", "process.stdin.resume()"], { input, allowedCommands: ["node"] })
+    ).rejects.toThrow(/input failed/);
+  });
+
+  it("passes spaces and ampersands as literal arguments", async () => {
+    const value = "path with spaces & symbols";
+    const result = await runSpawn(process.execPath, ["-e", "process.stdout.write(process.argv[1])", value], {
+      allowedCommands: ["node"]
+    });
+    expect(result.stdout).toBe(value);
+  });
+
+  it("reports timeout after terminating the child process", async () => {
+    const result = await runSpawn(process.execPath, ["-e", "setTimeout(() => {}, 1000)"], {
+      timeoutMs: 20,
+      allowedCommands: ["node"]
+    });
+    expect(result.timedOut).toBe(true);
+    expect(result.exitCode).not.toBe(0);
   });
 });
 

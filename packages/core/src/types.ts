@@ -12,6 +12,7 @@ export interface DbsnapBaseOptions {
   docker?: boolean;
   noDocker?: boolean;
   force?: boolean;
+  allowDifferentTarget?: boolean;
   dryRun?: boolean;
   yes?: boolean;
   processEnv?: NodeJS.ProcessEnv;
@@ -42,7 +43,19 @@ export interface SnapshotOperationResult {
   dryRun: boolean;
   database: ParsedDatabaseUrl;
   safety: SafetyCheckResult;
+  target?: SnapshotTargetCheck;
   message: string;
+}
+
+export interface SnapshotTargetCheck {
+  matches: boolean;
+  currentSource: string;
+  currentSourceHash?: string;
+  currentSourceId?: string;
+  snapshotSource: string;
+  snapshotSourceHash?: string;
+  snapshotSourceId?: string;
+  reasons: string[];
 }
 
 export interface ListSnapshotsResult {
@@ -63,4 +76,20 @@ export interface RenameSnapshotResult {
   newSnapshotDir: string;
   dryRun: boolean;
   metadata?: SnapshotMetadata;
+}
+
+export type VerifyCheckStatus = "pass" | "fail" | "warning" | "skip";
+
+export interface VerifyCheck {
+  name: string;
+  status: VerifyCheckStatus;
+  message: string;
+}
+
+export interface VerifySnapshotResult {
+  name: string;
+  snapshotDir: string;
+  ok: boolean;
+  metadata?: SnapshotMetadata;
+  checks: VerifyCheck[];
 }

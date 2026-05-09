@@ -8,7 +8,7 @@
     "db:restore": "dbsnap restore drizzle-ready --yes"
   },
   "devDependencies": {
-    "@canblmz1/dbsnap": "^0.9.0-beta.3",
+    "@canblmz1/dbsnap": "^0.9.0-beta.4",
     "drizzle-kit": "^0.30.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"

@@ -3,6 +3,7 @@ export { restoreSnapshot } from "./snapshots/restore-snapshot.js";
 export { listSnapshots, getSnapshotInfo } from "./snapshots/list-snapshots.js";
 export { deleteSnapshot } from "./snapshots/delete-snapshot.js";
 export { renameSnapshot } from "./snapshots/rename-snapshot.js";
+export { verifySnapshot } from "./snapshots/verify-snapshot.js";
 export { loadDbsnapConfig, loadConfigFile, detectDatabaseUrl } from "./config/load-config.js";
 export { loadEnv } from "./config/load-env.js";
 export { detectProject } from "./config/detect-project.js";
@@ -24,7 +25,7 @@ export {
 export { buildDockerPgDumpArgs, buildDockerPgRestoreArgs } from "./docker/docker-exec.js";
 export { buildPgDumpArgs, buildPgRestoreArgs, resolvePostgresExecutionPlan } from "./adapters/postgres.js";
 export { getSqliteDatabasePath } from "./adapters/sqlite.js";
-export { commandExists, runSpawn, assertSafeArgs } from "./utils/spawn.js";
+export { commandExists, runSpawn, assertSafeArgs, assertAllowedCommand } from "./utils/spawn.js";
 export { formatBytes } from "./utils/size.js";
 export { resolveProjectRoot, resolveSnapshotsDir, DEFAULT_SNAPSHOTS_DIR } from "./utils/paths.js";
 export {
@@ -42,9 +43,13 @@ export type {
   SnapshotMetadata,
   SnapshotInfo,
   SnapshotOperationResult,
+  SnapshotTargetCheck,
   ListSnapshotsResult,
   DeleteSnapshotResult,
-  RenameSnapshotResult
+  RenameSnapshotResult,
+  VerifyCheck,
+  VerifyCheckStatus,
+  VerifySnapshotResult
 } from "./types.js";
 export type { DbsnapConfig, LoadedDbsnapConfig, LoadDbsnapConfigOptions } from "./config/load-config.js";
 export type { LoadedEnv, EnvFileStatus, LoadEnvOptions } from "./config/load-env.js";

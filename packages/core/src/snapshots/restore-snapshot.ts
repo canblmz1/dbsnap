@@ -10,6 +10,7 @@ import { SnapshotError } from "../utils/errors.js";
 import { pathExists } from "../utils/fs.js";
 import { readMetadata } from "./metadata.js";
 import { findSnapshotDir } from "./snapshot-paths.js";
+import { evaluateSnapshotTarget } from "./target-check.js";
 import { validateSnapshotName } from "./validate-snapshot-name.js";
 
 export async function restoreSnapshot(name: string, options: DbsnapBaseOptions = {}): Promise<SnapshotOperationResult> {
@@ -32,6 +33,19 @@ export async function restoreSnapshot(name: string, options: DbsnapBaseOptions =
     snapshotName,
     resolvedSqlitePath
   });
+  const target = evaluateSnapshotTarget(metadata, config.database, {
+    projectRoot: config.projectRoot,
+    resolvedSqlitePath
+  });
+  if (!target.matches && !options.allowDifferentTarget && !options.dryRun) {
+    throw new SnapshotError(
+      `Snapshot "${snapshotName}" was saved from a different database target. Re-run with allowDifferentTarget only if this is intentional.`,
+      {
+        code: "SNAPSHOT_TARGET_MISMATCH",
+        details: { target }
+      }
+    );
+  }
 
   const artifactName = metadata.databaseType === "sqlite" ? SQLITE_SNAPSHOT_FILE : POSTGRES_SNAPSHOT_FILE;
   if (!(await pathExists(path.join(snapshotDir, artifactName)))) {
@@ -46,6 +60,7 @@ export async function restoreSnapshot(name: string, options: DbsnapBaseOptions =
       dryRun: true,
       database: sanitizeParsedDatabaseUrl(config.database),
       safety,
+      target,
       message: `Would restore snapshot "${snapshotName}".`
     };
   }
@@ -72,6 +87,7 @@ export async function restoreSnapshot(name: string, options: DbsnapBaseOptions =
     dryRun: false,
     database: sanitizeParsedDatabaseUrl(config.database),
     safety,
+    target,
     message: `Restored snapshot "${snapshotName}".`
   };
 }

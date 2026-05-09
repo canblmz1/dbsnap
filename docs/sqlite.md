@@ -30,6 +30,8 @@ dbsnap restore dev-ready
 
 The CLI asks for confirmation unless `--yes` is passed.
 
+Restore also checks the snapshot source against the current SQLite file path. Restoring into a different local SQLite file requires explicit confirmation or `--allow-different-target`.
+
 ## Limitations
 
 SQLite in-memory databases are not supported because there is no durable file to copy.

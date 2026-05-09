@@ -1,5 +1,10 @@
 # dbsnap
 
+[![npm version](https://img.shields.io/npm/v/@canblmz1/dbsnap.svg)](https://www.npmjs.com/package/@canblmz1/dbsnap)
+[![CI](https://github.com/canblmz1/dbsnap/actions/workflows/ci.yml/badge.svg)](https://github.com/canblmz1/dbsnap/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/@canblmz1/dbsnap.svg)](https://github.com/canblmz1/dbsnap/blob/main/LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6.svg)](https://www.typescriptlang.org/)
+
 **Time travel for your local development database.**
 
 Stop re-running migrations, seeds, and UI setup flows just to recreate the same local database state.
@@ -14,23 +19,31 @@ npx dbsnap restore checkout-ready
 Works with PostgreSQL, SQLite, Prisma, Drizzle, Docker, Vitest, and Playwright.
 The npm package is `@canblmz1/dbsnap`; the installed CLI binary is `dbsnap`.
 
+> [!WARNING]
+> dbsnap is not a production backup tool. It is for disposable local development databases.
+
 ## Demo
 
-Demo GIF coming soon - see [docs/demo-script.md](docs/demo-script.md).
+Demo GIF coming soon. Until then, use this terminal-sized flow or see the [demo script](https://github.com/canblmz1/dbsnap/blob/main/docs/demo-script.md).
 
-The demo flow:
+```text
+UI: Users: 10
+$ npx dbsnap save ten-users
+Saved snapshot "ten-users".
 
-1. UI shows `Users: 10`
-2. Run `dbsnap save ten-users`
-3. Delete all users
-4. UI shows `Users: 0`
-5. Run `dbsnap restore ten-users`
-6. UI shows `Users: 10`
+# delete all users
+UI: Users: 0
+
+$ npx dbsnap restore ten-users --yes
+Restored snapshot "ten-users".
+UI: Users: 10
+```
 
 ## Quick Start
 
 ```bash
 npm install -D @canblmz1/dbsnap
+npx dbsnap --help
 npx dbsnap init
 npx dbsnap save dev-ready
 ```
@@ -45,6 +58,7 @@ Using pnpm:
 
 ```bash
 pnpm add -D @canblmz1/dbsnap
+pnpm exec dbsnap --help
 pnpm exec dbsnap init
 pnpm exec dbsnap save dev-ready
 pnpm exec dbsnap restore dev-ready
@@ -118,6 +132,14 @@ PostgreSQL snapshots use `pg_dump --format=custom` and `pg_restore --clean --if-
 
 `dbsnap` is designed for local development databases. Large databases may take longer to save and restore.
 
+### PostgreSQL Client Tools
+
+| Platform | Install guidance |
+| --- | --- |
+| macOS | `brew install libpq` or `brew install postgresql@16`; make sure `pg_dump` and `pg_restore` are on `PATH`. |
+| Windows | Install PostgreSQL from the official installer and add the `bin` folder to `PATH`, or use Docker mode. |
+| Linux | Install your distro package such as `postgresql-client` or `postgresql-client-16`. |
+
 ## Docker PostgreSQL
 
 If local `pg_dump` or `pg_restore` is missing, dbsnap can use a matching PostgreSQL Docker container.
@@ -129,6 +151,8 @@ npx dbsnap restore docker-ready --docker --yes
 ```
 
 Docker matching uses the exposed PostgreSQL port from `DATABASE_URL`. If multiple containers match, dbsnap stops and asks for an explicit choice.
+
+On Windows, Docker mode expects Docker Desktop to be running and the container port to be published to the host.
 
 ## Prisma
 
@@ -193,10 +217,16 @@ Blocked by default:
 - non-local hosts
 - database names or paths containing `prod`, `production`, `staging`, or `live`
 
-Override:
+Override the remote/risky target guard only when you are certain the database is disposable:
 
 ```bash
 npx dbsnap restore snapshot-name --force-i-know-what-i-am-doing
+```
+
+dbsnap also records the database target that created each snapshot. If you try to restore a snapshot into a different local database, dbsnap asks for explicit confirmation. In non-interactive usage, pass this only when intentional:
+
+```bash
+npx dbsnap restore snapshot-name --allow-different-target --yes
 ```
 
 Secrets are redacted in normal and debug output. Raw database URLs with credentials are never printed.
@@ -225,6 +255,7 @@ dbsnap list
 dbsnap delete <name>
 dbsnap rename <old> <new>
 dbsnap info <name>
+dbsnap verify <name>
 dbsnap --version
 ```
 
@@ -240,6 +271,7 @@ Options:
 --docker
 --no-docker
 --force-i-know-what-i-am-doing
+--allow-different-target
 ```
 
 For non-interactive JSON usage, destructive commands such as `restore` and `delete` require `--yes` or `--dry-run`.
@@ -253,6 +285,7 @@ import {
   listSnapshots,
   deleteSnapshot,
   getSnapshotInfo,
+  verifySnapshot,
   loadDbsnapConfig,
 } from "@canblmz1/dbsnap";
 
@@ -261,6 +294,8 @@ await restoreSnapshot("checkout-ready", { yes: true });
 ```
 
 The API is typed, does not prompt, does not print to the terminal, and enforces safety by default.
+
+Use `allowDifferentTarget: true` only when intentionally restoring a snapshot into a different local database.
 
 ## Why Not Just Use pg_dump?
 
@@ -274,6 +309,7 @@ The value is the workflow around them:
 - SQLite + PostgreSQL support
 - Docker-aware PostgreSQL
 - safety guards
+- source-target mismatch checks
 - secret redaction
 - test-runner API
 - friendly CLI output
@@ -295,6 +331,7 @@ The value is the workflow around them:
 - Test-runner fixtures
 - Better interactive TUI
 - Shell completions
+- Retention and pruning policies
 
 ## Good First Issues
 
@@ -310,12 +347,13 @@ The value is the workflow around them:
 - Default tests mock command construction and do not require a real PostgreSQL server.
 - SQLite in-memory databases cannot be snapshotted.
 - `dbsnap` intentionally refuses remote-looking restores unless forced.
+- Restoring to a different target requires separate explicit confirmation.
 - Large local databases may take longer to save and restore.
 - SQLite WAL sidecars are copied, but snapshots are most reliable when the app is not actively writing during `save`.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See the [contributing guide](https://github.com/canblmz1/dbsnap/blob/main/CONTRIBUTING.md) and [security policy](https://github.com/canblmz1/dbsnap/blob/main/SECURITY.md).
 
 ```bash
 pnpm install
