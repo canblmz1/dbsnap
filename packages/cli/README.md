@@ -100,6 +100,8 @@ SQLite snapshots are file copies stored under:
 .dbsnaps/<name>/database.sqlite
 ```
 
+If your SQLite database is in WAL mode, dbsnap also stores the matching `-wal` and `-shm` sidecar files. For the most reliable snapshot, pause writes before saving.
+
 ## PostgreSQL
 
 ```env
@@ -309,6 +311,7 @@ The value is the workflow around them:
 - SQLite in-memory databases cannot be snapshotted.
 - `dbsnap` intentionally refuses remote-looking restores unless forced.
 - Large local databases may take longer to save and restore.
+- SQLite WAL sidecars are copied, but snapshots are most reliable when the app is not actively writing during `save`.
 
 ## Contributing
 

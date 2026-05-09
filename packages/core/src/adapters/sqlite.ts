@@ -2,13 +2,15 @@ import path from "node:path";
 import type { ParsedSqliteDatabaseUrl } from "../config/parse-database-url.js";
 import { resolveSqlitePath } from "../config/parse-database-url.js";
 import type { SnapshotMetadata } from "../types.js";
-import { copyFileWithDirs, fileSize, pathExists } from "../utils/fs.js";
+import { copyFileWithDirs, fileSize, pathExists, removeFileIfExists } from "../utils/fs.js";
 import { DatabaseError, SnapshotError } from "../utils/errors.js";
 import { normalizeForDisplay } from "../utils/paths.js";
 import { DBSNAP_VERSION, hashSource } from "../snapshots/metadata.js";
 import { nowIso } from "../utils/time.js";
 
 export const SQLITE_SNAPSHOT_FILE = "database.sqlite";
+export const SQLITE_WAL_SNAPSHOT_FILE = "database.sqlite-wal";
+export const SQLITE_SHM_SNAPSHOT_FILE = "database.sqlite-shm";
 
 export interface SqliteSaveInput {
   projectRoot: string;
@@ -28,6 +30,13 @@ export function getSqliteDatabasePath(projectRoot: string, database: ParsedSqlit
   return resolveSqlitePath(projectRoot, database);
 }
 
+function sqliteSidecars(databasePath: string): Array<{ source: string; snapshotName: string }> {
+  return [
+    { source: `${databasePath}-wal`, snapshotName: SQLITE_WAL_SNAPSHOT_FILE },
+    { source: `${databasePath}-shm`, snapshotName: SQLITE_SHM_SNAPSHOT_FILE }
+  ];
+}
+
 export async function saveSqliteSnapshot(input: SqliteSaveInput): Promise<SnapshotMetadata> {
   const databasePath = getSqliteDatabasePath(input.projectRoot, input.database);
   if (!(await pathExists(databasePath))) {
@@ -38,7 +47,14 @@ export async function saveSqliteSnapshot(input: SqliteSaveInput): Promise<Snapsh
 
   const destination = path.join(input.snapshotDir, SQLITE_SNAPSHOT_FILE);
   await copyFileWithDirs(databasePath, destination);
-  const sizeBytes = await fileSize(destination);
+  let sizeBytes = await fileSize(destination);
+  for (const sidecar of sqliteSidecars(databasePath)) {
+    if (await pathExists(sidecar.source)) {
+      const sidecarDestination = path.join(input.snapshotDir, sidecar.snapshotName);
+      await copyFileWithDirs(sidecar.source, sidecarDestination);
+      sizeBytes += await fileSize(sidecarDestination);
+    }
+  }
   const source = normalizeForDisplay(input.projectRoot, databasePath);
 
   return {
@@ -59,4 +75,12 @@ export async function restoreSqliteSnapshot(input: SqliteRestoreInput): Promise<
   }
   const databasePath = getSqliteDatabasePath(input.projectRoot, input.database);
   await copyFileWithDirs(source, databasePath);
+  for (const sidecar of sqliteSidecars(databasePath)) {
+    const sidecarSource = path.join(input.snapshotDir, sidecar.snapshotName);
+    if (await pathExists(sidecarSource)) {
+      await copyFileWithDirs(sidecarSource, sidecar.source);
+    } else {
+      await removeFileIfExists(sidecar.source);
+    }
+  }
 }

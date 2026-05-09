@@ -169,6 +169,42 @@ describe("SQLite snapshot lifecycle", () => {
     expect(afterDelete.snapshots).toHaveLength(0);
   });
 
+  it("saves and restores SQLite WAL sidecar files", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, "dev.db", "main");
+    await write(root, "dev.db-wal", "wal");
+    await write(root, "dev.db-shm", "shm");
+
+    const saved = await saveSnapshot("wal-state", { projectRoot: root });
+    expect(saved.metadata?.sizeBytes).toBe("mainwalshm".length);
+    await expect(fs.readFile(path.join(root, ".dbsnaps", "wal-state", "database.sqlite-wal"), "utf8")).resolves.toBe("wal");
+    await expect(fs.readFile(path.join(root, ".dbsnaps", "wal-state", "database.sqlite-shm"), "utf8")).resolves.toBe("shm");
+
+    await write(root, "dev.db", "mutated-main");
+    await write(root, "dev.db-wal", "mutated-wal");
+    await write(root, "dev.db-shm", "mutated-shm");
+
+    await restoreSnapshot("wal-state", { projectRoot: root, yes: true });
+    await expect(fs.readFile(path.join(root, "dev.db"), "utf8")).resolves.toBe("main");
+    await expect(fs.readFile(path.join(root, "dev.db-wal"), "utf8")).resolves.toBe("wal");
+    await expect(fs.readFile(path.join(root, "dev.db-shm"), "utf8")).resolves.toBe("shm");
+  });
+
+  it("removes stale SQLite WAL sidecars when the snapshot does not include them", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, "dev.db", "main");
+
+    await saveSnapshot("plain", { projectRoot: root });
+    await write(root, "dev.db-wal", "stale-wal");
+    await write(root, "dev.db-shm", "stale-shm");
+
+    await restoreSnapshot("plain", { projectRoot: root, yes: true });
+    await expect(fs.stat(path.join(root, "dev.db-wal"))).rejects.toThrow();
+    await expect(fs.stat(path.join(root, "dev.db-shm"))).rejects.toThrow();
+  });
+
   it("lists, infos, deletes, and renames snapshots without DATABASE_URL", async () => {
     const root = await tempProject();
     await writeMetadata(path.join(root, ".dbsnaps", "orphan"), {

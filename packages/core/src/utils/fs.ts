@@ -47,6 +47,10 @@ export async function copyFileWithDirs(source: string, destination: string): Pro
   await fs.copyFile(source, destination);
 }
 
+export async function removeFileIfExists(targetPath: string): Promise<void> {
+  await fs.rm(targetPath, { force: true });
+}
+
 export async function fileSize(targetPath: string): Promise<number> {
   return (await fs.stat(targetPath)).size;
 }

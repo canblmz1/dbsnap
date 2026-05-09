@@ -8,7 +8,7 @@
     "db:restore": "dbsnap restore test-ready --yes"
   },
   "devDependencies": {
-    "@canblmz1/dbsnap": "^0.9.0-beta.2",
+    "@canblmz1/dbsnap": "^0.9.0-beta.3",
     "vitest": "^2.1.8"
   }
 }
