@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0-beta.5
+
+Republish release for the CI-stabilized release hardening changes.
+
+- Keeps the `0.9.0-beta.4` hardening work intact.
+- Includes the Windows CI fix for the README command reference regression test.
+
 ## 0.9.0-beta.4
 
 Release-readiness hardening for the published scoped packages.

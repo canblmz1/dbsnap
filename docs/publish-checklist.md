@@ -27,7 +27,7 @@
 - [ ] Confirm docs match behavior
 - [ ] Confirm package exports
 - [ ] Confirm `files` whitelist
-- [ ] Confirm version is `0.9.0-beta.4`
+- [ ] Confirm version is `0.9.0-beta.5`
 - [ ] Confirm `dbsnap restore` different-target guard behavior
 - [ ] Publish `@canblmz1/dbsnap-core` with the `beta` dist-tag before `@canblmz1/dbsnap`
 - [ ] Publish `@canblmz1/dbsnap` with the `beta` dist-tag

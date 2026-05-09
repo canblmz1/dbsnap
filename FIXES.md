@@ -14,7 +14,7 @@ Date: 2026-05-09
 
 ## 2. Düzeltilenler
 
-- Root, CLI package, core package ve `DBSNAP_VERSION` `0.9.0-beta.4` üzerinde hizalı.
+- Root, CLI package, core package ve `DBSNAP_VERSION` `0.9.0-beta.5` üzerinde hizalı.
 - Version alignment testi eklendi; CLI `--version` package version ile aynı değeri basıyor.
 - Snapshot metadata `dbsnapVersion` aynı `DBSNAP_VERSION` sabitinden yazılıyor.
 - `dbsnap verify <name>` ve `dbsnap verify <name> --json` davranışı testlendi.
@@ -145,7 +145,7 @@ Version bump sırasında şu değerler birlikte güncellenmeli:
 mkdir -p /tmp/dbsnap-smoke
 cd /tmp/dbsnap-smoke
 npm init -y
-npm install -D @canblmz1/dbsnap@0.9.0-beta.4
+npm install -D @canblmz1/dbsnap@0.9.0-beta.5
 npx dbsnap --version
 npx dbsnap --help
 npx dbsnap verify --help
@@ -168,7 +168,7 @@ Passed locally on Windows:
 - `npm pack` for `@canblmz1/dbsnap-core`
 - `npm pack` for `@canblmz1/dbsnap`
 - temp consumer install with local core + CLI tarballs
-- `npx dbsnap --version` -> `0.9.0-beta.4`
+- `npx dbsnap --version` -> `0.9.0-beta.5`
 - `npx dbsnap --help`
 - `npx dbsnap verify --help`
 - `npx dbsnap init --dry-run`
