@@ -130,7 +130,7 @@ describe("CLI", () => {
 
   it("keeps root .gitignore safe for snapshots and env examples", async () => {
     const gitignore = await fs.readFile(new URL("../../../.gitignore", import.meta.url), "utf8");
-    expect(gitignore).toContain(".dbsnaps/");
+    expect(gitignore).toContain("**/.dbsnaps/");
     expect(gitignore).toContain("dbsnaps/");
     expect(gitignore).toContain("*.pgcustom");
     expect(gitignore).toContain("*.sqlite");

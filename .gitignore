@@ -39,10 +39,10 @@ coverage/
 # dbsnap snapshot artifacts and local database files
 # These are local development artifacts and must not be committed.
 # If an example ever needs a tiny committed SQLite fixture, whitelist it explicitly here.
-.dbsnaps/
-.dbsnap/
-dbsnaps/
-snapshots/
+**/.dbsnaps/
+**/.dbsnap/
+**/dbsnaps/
+/snapshots/
 *.pgdump
 *.pgcustom
 *.dump
