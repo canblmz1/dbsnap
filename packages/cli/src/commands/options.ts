@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import type { DbsnapBaseOptions } from "@dbsnap/core";
+import type { DbsnapBaseOptions } from "@canblmz1/dbsnap-core";
 
 export interface CliOptions extends DbsnapBaseOptions {
   json?: boolean;

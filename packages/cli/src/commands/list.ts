@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { listSnapshots } from "@dbsnap/core";
+import { listSnapshots } from "@canblmz1/dbsnap-core";
 import { bytes, createReporter } from "../ui/reporter.js";
 import { readCliOptions } from "./options.js";
 

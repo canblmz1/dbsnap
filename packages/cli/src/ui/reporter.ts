@@ -1,6 +1,6 @@
 import pc from "picocolors";
-import { formatBytes } from "@dbsnap/core";
-import { redactSecrets, formatError } from "@dbsnap/core";
+import { formatBytes } from "@canblmz1/dbsnap-core";
+import { redactSecrets, formatError } from "@canblmz1/dbsnap-core";
 
 const SECRET_KEYS = new Set([
   "password",

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { restoreSnapshot } from "dbsnap";
+import { restoreSnapshot } from "@canblmz1/dbsnap";
 
 test.beforeEach(async () => {
   await restoreSnapshot("checkout-ready", { yes: true });

@@ -2,7 +2,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
-import { DBSNAP_VERSION, formatError } from "@dbsnap/core";
+import { DBSNAP_VERSION, formatError } from "@canblmz1/dbsnap-core";
 import { registerDeleteCommand } from "./commands/delete.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerInfoCommand } from "./commands/info.js";

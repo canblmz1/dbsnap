@@ -13,7 +13,7 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@dbsnap/core": ["packages/core/src/index.ts"]
+      "@canblmz1/dbsnap-core": ["packages/core/src/index.ts"]
     },
     "types": ["node"]
   },

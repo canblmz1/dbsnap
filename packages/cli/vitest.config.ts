@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   resolve: {
     alias: {
-      "@dbsnap/core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url))
+      "@canblmz1/dbsnap-core": fileURLToPath(new URL("../core/src/index.ts", import.meta.url))
     }
   },
   test: {

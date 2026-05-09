@@ -5,16 +5,18 @@
 Stop re-running migrations, seeds, and UI setup flows just to recreate the same local database state.
 
 ```bash
+npm install -D @canblmz1/dbsnap
 npx dbsnap save checkout-ready
 # break your local database while developing
 npx dbsnap restore checkout-ready
 ```
 
 Works with PostgreSQL, SQLite, Prisma, Drizzle, Docker, Vitest, and Playwright.
+The npm package is `@canblmz1/dbsnap`; the installed CLI binary is `dbsnap`.
 
 ## Demo
 
-Demo GIF coming soon — see [docs/demo-script.md](docs/demo-script.md).
+Demo GIF coming soon - see [docs/demo-script.md](docs/demo-script.md).
 
 The demo flow:
 
@@ -28,7 +30,7 @@ The demo flow:
 ## Quick Start
 
 ```bash
-npm install -D dbsnap
+npm install -D @canblmz1/dbsnap
 npx dbsnap init
 npx dbsnap save dev-ready
 ```
@@ -42,7 +44,7 @@ npx dbsnap restore dev-ready
 Using pnpm:
 
 ```bash
-pnpm add -D dbsnap
+pnpm add -D @canblmz1/dbsnap
 pnpm exec dbsnap init
 pnpm exec dbsnap save dev-ready
 pnpm exec dbsnap restore dev-ready
@@ -150,7 +152,7 @@ pnpm exec dbsnap save drizzle-ready
 
 ```ts
 import { beforeEach } from "vitest";
-import { restoreSnapshot } from "dbsnap";
+import { restoreSnapshot } from "@canblmz1/dbsnap";
 
 beforeEach(async () => {
   await restoreSnapshot("test-ready", { yes: true });
@@ -161,7 +163,7 @@ beforeEach(async () => {
 
 ```ts
 import { test } from "@playwright/test";
-import { restoreSnapshot } from "dbsnap";
+import { restoreSnapshot } from "@canblmz1/dbsnap";
 
 test.beforeEach(async () => {
   await restoreSnapshot("checkout-ready", { yes: true });
@@ -250,7 +252,7 @@ import {
   deleteSnapshot,
   getSnapshotInfo,
   loadDbsnapConfig,
-} from "dbsnap";
+} from "@canblmz1/dbsnap";
 
 await saveSnapshot("checkout-ready");
 await restoreSnapshot("checkout-ready", { yes: true });

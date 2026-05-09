@@ -16,5 +16,5 @@
 - [ ] Confirm package exports
 - [ ] Confirm `files` whitelist
 - [ ] Confirm version is `0.9.0-beta.1`
-- [ ] Publish `@dbsnap/core` before `dbsnap`
-- [ ] Confirm `dbsnap` depends on the published `@dbsnap/core` version
+- [ ] Publish `@canblmz1/dbsnap-core` before `@canblmz1/dbsnap`
+- [ ] Confirm `@canblmz1/dbsnap` depends on the published `@canblmz1/dbsnap-core` version

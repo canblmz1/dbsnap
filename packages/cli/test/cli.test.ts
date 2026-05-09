@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DBSNAP_VERSION, writeMetadata } from "@dbsnap/core";
+import { DBSNAP_VERSION, writeMetadata } from "@canblmz1/dbsnap-core";
 import { createProgram } from "../src/index.js";
 
 let originalCwd: string;

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Command } from "commander";
-import { detectProject, loadEnv, parseDatabaseUrl, redactDatabaseUrl, resolveProjectRoot } from "@dbsnap/core";
+import { detectProject, loadEnv, parseDatabaseUrl, redactDatabaseUrl, resolveProjectRoot } from "@canblmz1/dbsnap-core";
 import { createReporter } from "../ui/reporter.js";
 import { confirm } from "../ui/prompts.js";
 import { readCliOptions } from "./options.js";
@@ -79,7 +79,7 @@ export async function runInit(options: ReturnType<typeof readCliOptions>): Promi
       options.yes || options.dryRun || (!options.json && (await confirm("Create dbsnap.config.ts?")));
     if (shouldCreate) {
       const config = [
-        "import type { DbsnapConfig } from \"dbsnap\";",
+        "import type { DbsnapConfig } from \"@canblmz1/dbsnap\";",
         "",
         "const config: DbsnapConfig = {",
         "  snapshotsDir: \".dbsnaps\"",

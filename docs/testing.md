@@ -6,7 +6,7 @@ dbsnap is useful when a test suite needs the same expensive local database state
 
 ```ts
 import { beforeEach } from "vitest";
-import { restoreSnapshot } from "dbsnap";
+import { restoreSnapshot } from "@canblmz1/dbsnap";
 
 beforeEach(async () => {
   await restoreSnapshot("test-ready", { yes: true });
@@ -17,7 +17,7 @@ beforeEach(async () => {
 
 ```ts
 import { test } from "@playwright/test";
-import { restoreSnapshot } from "dbsnap";
+import { restoreSnapshot } from "@canblmz1/dbsnap";
 
 test.beforeEach(async () => {
   await restoreSnapshot("checkout-ready", { yes: true });

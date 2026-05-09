@@ -1,1 +1,1 @@
-export * from "@dbsnap/core";
+export * from "@canblmz1/dbsnap-core";

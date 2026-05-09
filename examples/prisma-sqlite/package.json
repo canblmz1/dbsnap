@@ -9,7 +9,7 @@
     "db:restore": "dbsnap restore seeded --yes"
   },
   "devDependencies": {
-    "dbsnap": "^0.9.0-beta.1",
+    "@canblmz1/dbsnap": "^0.9.0-beta.1",
     "prisma": "^6.0.0",
     "tsx": "^4.19.2"
   },

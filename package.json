@@ -9,7 +9,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "dev": "pnpm --filter dbsnap dev"
+    "dev": "pnpm --filter @canblmz1/dbsnap dev"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
