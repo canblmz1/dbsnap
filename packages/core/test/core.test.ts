@@ -323,6 +323,15 @@ describe("SQLite snapshot lifecycle", () => {
     await expect(fs.stat(path.join(root, ".dbsnaps", "middle"))).resolves.toBeTruthy();
   });
 
+  it("rejects invalid prune retention criteria", async () => {
+    const root = await tempProject();
+
+    await expect(pruneSnapshots({ projectRoot: root, keepLast: -1 })).rejects.toThrow(/non-negative integer/);
+    await expect(pruneSnapshots({ projectRoot: root, olderThan: "abc" })).rejects.toThrow(/duration/);
+    await expect(pruneSnapshots({ projectRoot: root, olderThan: "0d" })).rejects.toThrow(/greater than zero/);
+    await expect(pruneSnapshots({ projectRoot: root })).rejects.toThrow(/at least one prune criterion/);
+  });
+
   it("honors custom snapshots directory and dry-run", async () => {
     const root = await tempProject();
     await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
@@ -602,5 +611,43 @@ describe("doctor report", () => {
     expect(JSON.stringify(report)).not.toContain("postgres://user:secret");
     expect(report.safety?.allowedByDefault).toBe(false);
     expect(report.warnings.length).toBeGreaterThan(0);
+  });
+
+  it("reports runtime, snapshots, and SQLite diagnostics without leaking secrets", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, "dev.db", "data");
+    await writeMetadata(path.join(root, ".dbsnaps", "one"), {
+      name: "one",
+      databaseType: "sqlite",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 4,
+      source: "dev.db",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+
+    const report = await getDoctorReport({ projectRoot: root, processEnv: {} });
+
+    expect(report.version).toBe(DBSNAP_VERSION);
+    expect(report.runtime.nodeVersion).toBe(process.version);
+    expect(report.runtime.platform).toBe(process.platform);
+    expect(report.databaseUrl.source).toBe(".env");
+    expect(report.sqlite?.exists).toBe(true);
+    expect(report.sqlite?.parentWritable).toBe(true);
+    expect(report.sqlite?.note).toContain("WAL");
+    expect(report.snapshotsDirStatus.exists).toBe(true);
+    expect(report.snapshotsDirStatus.writable).toBe(true);
+    expect(report.snapshotsDirStatus.snapshotCount).toBe(1);
+    expect(JSON.stringify(report)).not.toContain("postgres://user:secret");
+  });
+
+  it("returns actionable diagnostics when DATABASE_URL is missing", async () => {
+    const root = await tempProject();
+    const report = await getDoctorReport({ projectRoot: root, processEnv: {} });
+
+    expect(report.databaseUrl.found).toBe(false);
+    expect(report.databaseUrl.error).toContain("Could not find DATABASE_URL");
+    expect(report.snapshotsDirStatus.exists).toBe(false);
+    expect(report.version).toBe(DBSNAP_VERSION);
   });
 });

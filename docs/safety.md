@@ -15,14 +15,14 @@ dbsnap is a local development snapshot tool, not a production backup tool. Savin
 - Hosted providers such as RDS, Supabase, Neon, Railway, Render, and Fly
 - Database names or paths containing `prod`, `production`, `staging`, or `live`
 
-## Override
+## Overrides
 
 ```bash
 dbsnap save snapshot-name --force-i-know-what-i-am-doing
 dbsnap restore snapshot-name --force-i-know-what-i-am-doing
 ```
 
-Use the override only for disposable local databases.
+Use `--force-i-know-what-i-am-doing` only for disposable local databases when dbsnap blocks a risky or remote-looking target.
 
 ## Snapshot Target Matching
 
@@ -37,6 +37,7 @@ dbsnap restore snapshot-name --allow-different-target --yes
 ```
 
 The remote/risky database guard and the different-target guard are separate. `--force-i-know-what-i-am-doing` does not bypass target mismatch protection.
+Likewise, `--allow-different-target` does not bypass remote or production-like database safety.
 
 ## Secret Redaction
 

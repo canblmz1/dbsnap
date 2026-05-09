@@ -14,6 +14,7 @@ export function registerVerifyCommand(program: Command): void {
       const result = await verifySnapshot(name, options);
       if (options.json) {
         reporter.json(result);
+        if (!result.ok) process.exitCode = 1;
         return;
       }
 

@@ -21,6 +21,7 @@ The npm package is `@canblmz1/dbsnap`; the installed CLI binary is `dbsnap`.
 
 > [!WARNING]
 > dbsnap is not a production backup tool. It is for disposable local development databases.
+> Do not commit `.dbsnaps/`, `.env`, local SQLite files, PostgreSQL dumps, or other snapshot artifacts.
 
 ## Demo
 
@@ -64,7 +65,7 @@ pnpm exec dbsnap save dev-ready
 pnpm exec dbsnap restore dev-ready
 ```
 
-Small local development databases usually restore quickly. Larger databases depend on dump size, disk speed, and PostgreSQL tooling.
+Small local development databases usually restore quickly. Larger databases depend on dump size, disk speed, and PostgreSQL tooling, so save/restore can take noticeable time.
 
 ## The Problem
 
@@ -131,6 +132,7 @@ npx dbsnap restore seed-ready --yes
 PostgreSQL snapshots use `pg_dump --format=custom` and `pg_restore --clean --if-exists --no-owner`.
 
 `dbsnap` is designed for local development databases. Large databases may take longer to save and restore.
+PostgreSQL support requires local `pg_dump` / `pg_restore` binaries or Docker fallback.
 
 ### PostgreSQL Client Tools
 
@@ -229,9 +231,12 @@ dbsnap also records the database target that created each snapshot. If you try t
 npx dbsnap restore snapshot-name --allow-different-target --yes
 ```
 
+These flags are intentionally different. `--force-i-know-what-i-am-doing` is only for the risky/remote database guard. `--allow-different-target` is only for restoring a snapshot into a different local database target. One flag does not bypass the other.
+
 Secrets are redacted in normal and debug output. Raw database URLs with credentials are never printed.
 
 dbsnap snapshots are local artifacts and should not be committed. `dbsnap init` adds the snapshots directory to `.gitignore`.
+Users should still avoid committing `.env` files or any file containing database credentials.
 
 ## Not A Production Backup Tool
 
@@ -246,35 +251,34 @@ It is a local development workflow tool for disposable local databases.
 
 ## CLI Reference
 
-```bash
-dbsnap init
-dbsnap doctor
-dbsnap save <name>
-dbsnap restore [name]
-dbsnap list
-dbsnap prune --keep-last <count>
-dbsnap prune --older-than <duration>
-dbsnap delete <name>
-dbsnap rename <old> <new>
-dbsnap info <name>
-dbsnap verify <name>
-dbsnap --version
-```
+| Command | Description |
+|---|---|
+| `dbsnap init` | Initialize dbsnap in this project |
+| `dbsnap doctor` | Check configuration, safety, and local tooling |
+| `dbsnap save <name>` | Save the current local database state |
+| `dbsnap restore [name]` | Restore a saved database snapshot |
+| `dbsnap list` | List saved database snapshots |
+| `dbsnap prune [options]` | Delete old snapshots by retention policy |
+| `dbsnap delete <name>` | Delete a saved snapshot |
+| `dbsnap rename <old> <new>` | Rename a saved snapshot |
+| `dbsnap info <name>` | Show details for one snapshot |
+| `dbsnap verify <name>` | Verify snapshot metadata and artifacts |
+| `dbsnap --version` | Print version |
 
-Options:
+Global options:
 
-```bash
---json
---yes
---dry-run
---debug
---verbose
---snapshots-dir <dir>
---docker
---no-docker
---force-i-know-what-i-am-doing
---allow-different-target
-```
+| Option | Description |
+|---|---|
+| `--json` | Print JSON output where supported |
+| `--yes` | Skip confirmation prompts |
+| `--dry-run` | Show what would happen without changing files or databases |
+| `--debug` | Print additional debug information with secrets redacted |
+| `--verbose` | Print more command output |
+| `--snapshots-dir <dir>` | Snapshots directory |
+| `--docker` | Use PostgreSQL client tools inside a matching Docker container |
+| `--no-docker` | Do not fall back to Docker for PostgreSQL client tools |
+| `--force-i-know-what-i-am-doing` | Allow save/restore to a database dbsnap considers risky |
+| `--allow-different-target` | Allow restore when the snapshot was saved from a different database target |
 
 For non-interactive JSON usage, destructive commands such as `restore` and `delete` require `--yes` or `--dry-run`.
 
@@ -295,11 +299,13 @@ import {
   deleteSnapshot,
   getSnapshotInfo,
   verifySnapshot,
+  pruneSnapshots,
   loadDbsnapConfig,
 } from "@canblmz1/dbsnap";
 
 await saveSnapshot("checkout-ready");
 await restoreSnapshot("checkout-ready", { yes: true });
+await pruneSnapshots({ keepLast: 5, dryRun: true });
 ```
 
 The API is typed, does not prompt, does not print to the terminal, and enforces safety by default.

@@ -122,6 +122,16 @@ if (!help.includes("Time travel for your local development database") || !help.i
   throw new Error("dbsnap --help did not include expected help text.");
 }
 
+const pruneHelp = run(npx, ["dbsnap", "prune", "--help"], { cwd: temp });
+if (!pruneHelp.includes("--keep-last") || !pruneHelp.includes("--older-than")) {
+  throw new Error("dbsnap prune --help did not include expected options.");
+}
+
+const verifyHelp = run(npx, ["dbsnap", "verify", "--help"], { cwd: temp });
+if (!verifyHelp.includes("Verify snapshot metadata and artifacts")) {
+  throw new Error("dbsnap verify --help did not include expected help text.");
+}
+
 run(npx, ["dbsnap", "init", "--dry-run"], { cwd: temp });
 
 const sqliteEnv = { ...process.env, DATABASE_URL: "file:./dev.db" };
@@ -156,6 +166,22 @@ if (pnpmVersion !== cliPackage.version) {
 
 fs.writeFileSync(path.join(temp, "dev.db"), "users=10", "utf8");
 run(npx, ["dbsnap", "save", "test"], { cwd: temp, env: sqliteEnv });
+const verifyText = run(npx, ["dbsnap", "verify", "test"], { cwd: temp, env: sqliteEnv });
+if (!verifyText.includes('Snapshot "test" verified.')) {
+  throw new Error(`dbsnap verify did not report success: ${verifyText}`);
+}
+const verifyJson = JSON.parse(run(npx, ["dbsnap", "--json", "verify", "test"], { cwd: temp, env: sqliteEnv }));
+if (verifyJson.ok !== true || !Array.isArray(verifyJson.checks)) {
+  throw new Error("dbsnap verify --json did not return successful JSON.");
+}
+const savedList = JSON.parse(run(npx, ["dbsnap", "--json", "list"], { cwd: temp, env: sqliteEnv }));
+if (!savedList.snapshots.some((snapshot) => snapshot.name === "test")) {
+  throw new Error("dbsnap list --json did not include the saved snapshot.");
+}
+const pruneDryRun = JSON.parse(run(npx, ["dbsnap", "--json", "--dry-run", "prune", "--keep-last", "5"], { cwd: temp }));
+if (pruneDryRun.dryRun !== true || !Array.isArray(pruneDryRun.pruned)) {
+  throw new Error("dbsnap prune --json --dry-run did not return valid JSON.");
+}
 fs.writeFileSync(path.join(temp, "dev.db"), "users=0", "utf8");
 run(npx, ["dbsnap", "restore", "test", "--yes"], { cwd: temp, env: sqliteEnv });
 

@@ -44,6 +44,7 @@ afterEach(() => {
   process.chdir(originalCwd);
   if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
   else process.env.DATABASE_URL = originalDatabaseUrl;
+  process.exitCode = undefined;
 });
 
 describe("CLI", () => {
@@ -91,16 +92,27 @@ describe("CLI", () => {
 
   it("keeps README CLI reference aligned with registered commands", async () => {
     const readme = await fs.readFile(new URL("../../../README.md", import.meta.url), "utf8");
-    const reference = /## CLI Reference[\s\S]*?```bash\r?\n(?<commands>[\s\S]*?)```/.exec(readme)?.groups?.commands ?? "";
-    const documented = reference
+    const cliReference = /## CLI Reference(?<section>[\s\S]*?)## Node API/.exec(readme)?.groups?.section ?? "";
+    const documented = cliReference
       .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith("dbsnap "))
-      .map((line) => line.split(/\s+/)[1])
-      .filter((name) => !name.startsWith("--"));
+      .map((line) => /`\s*dbsnap\s+([^\s`]+)/.exec(line)?.[1])
+      .filter((name): name is string => typeof name === "string" && !name.startsWith("--"));
     const registered = createProgram().commands.map((command) => command.name());
 
     expect(new Set(documented)).toEqual(new Set(registered));
+  });
+
+  it("keeps README global options aligned with the program options", async () => {
+    const readme = await fs.readFile(new URL("../../../README.md", import.meta.url), "utf8");
+    const documented = new Set(
+      Array.from(readme.matchAll(/`\s*(--[a-z0-9-]+)(?:\s+<[^`]+>)?\s*`/gi), (match) => match[1])
+        .filter((option) => option !== "--keep-last" && option !== "--older-than")
+    );
+    const registered = new Set(
+      createProgram().options.map((option) => option.long).filter((option): option is string => Boolean(option) && option !== "--version")
+    );
+
+    expect(documented).toEqual(registered);
   });
 
   it("detects direct CLI invocation through an npm bin symlink", async () => {
@@ -124,12 +136,18 @@ describe("CLI", () => {
     const root = await tempProject();
     process.chdir(root);
     await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, "dev.db", "data");
     const output = await captureStdout(async () => {
       await createProgram().parseAsync(["node", "dbsnap", "--json", "doctor"]);
     });
     const parsed = JSON.parse(output);
+    expect(parsed.version).toBe(DBSNAP_VERSION);
+    expect(parsed.runtime.nodeVersion).toBe(process.version);
     expect(parsed.databaseUrl.found).toBe(true);
+    expect(parsed.databaseUrl.source).toBe(".env");
     expect(parsed.database.type).toBe("sqlite");
+    expect(parsed.sqlite.exists).toBe(true);
+    expect(parsed.snapshotsDirStatus.snapshotCount).toBe(0);
   });
 
   it("runs init dry-run without writing files", async () => {
@@ -280,6 +298,34 @@ describe("CLI", () => {
     ).toBe(true);
   });
 
+  it("sets exit code 1 for failed verify JSON output", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+    await writeMetadata(path.join(root, ".dbsnaps", "bad-size"), {
+      name: "bad-size",
+      databaseType: "sqlite",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 10,
+      source: "dev.db",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+    await write(root, ".dbsnaps/bad-size/database.sqlite", "data");
+    const output = await captureStdout(async () => {
+      await createProgram().parseAsync(["node", "dbsnap", "--json", "verify", "bad-size"]);
+    });
+    const parsed = JSON.parse(output);
+    expect(parsed.ok).toBe(false);
+    expect(process.exitCode).toBe(1);
+  });
+
+  it("fails clearly for missing snapshots during verify", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+    await expect(createProgram().parseAsync(["node", "dbsnap", "verify", "missing"])).rejects.toThrow(
+      /was not found/
+    );
+  });
+
   it("prints prune JSON and honors dry-run from the CLI", async () => {
     const root = await tempProject();
     process.chdir(root);
@@ -298,6 +344,21 @@ describe("CLI", () => {
     expect(parsed.dryRun).toBe(true);
     expect(parsed.pruned.map((snapshot: { name: string }) => snapshot.name)).toEqual(["old"]);
     await expect(fs.stat(path.join(root, ".dbsnaps", "old"))).resolves.toBeTruthy();
+  });
+
+  it("rejects invalid prune options from the CLI", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+
+    await expect(createProgram().parseAsync(["node", "dbsnap", "prune", "--keep-last", "-1"])).rejects.toThrow(
+      /non-negative integer/
+    );
+    await expect(createProgram().parseAsync(["node", "dbsnap", "prune", "--older-than", "abc"])).rejects.toThrow(
+      /duration/
+    );
+    await expect(createProgram().parseAsync(["node", "dbsnap", "prune", "--older-than", "0d"])).rejects.toThrow(
+      /greater than zero/
+    );
   });
 
   it("enforces safety for restore through the CLI command path", async () => {
