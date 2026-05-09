@@ -9,7 +9,6 @@
 - Add compressed snapshot storage.
 - Add richer doctor diagnostics for Docker Compose.
 - Add fixtures for Vitest and Playwright.
-- Add retention policies such as `dbsnap prune --keep-last 5`.
 
 ## Later
 

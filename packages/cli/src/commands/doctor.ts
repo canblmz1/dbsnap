@@ -20,14 +20,15 @@ export function registerDoctorCommand(program: Command): void {
       reporter.table([
         { check: "Project root", status: report.projectRoot },
         { check: "DATABASE_URL", status: report.databaseUrl.found ? "found" : "missing" },
+        { check: "DATABASE_URL source", status: report.databaseUrl.source ?? "unknown" },
         { check: "Redacted URL", status: report.databaseUrl.redacted ?? "" },
         { check: "Database type", status: report.database?.type ?? "unknown" },
         { check: "Prisma", status: report.project.prisma.detected ? "detected" : "not detected" },
         { check: "Drizzle", status: report.project.drizzle.detected ? "detected" : "not detected" },
         { check: "Snapshots dir", status: report.snapshotsDir },
         { check: "Safety", status: report.safety?.level ?? "unknown" },
-        { check: "pg_dump", status: report.tools.pgDump?.available === undefined ? "n/a" : report.tools.pgDump.available ? "available" : "missing" },
-        { check: "pg_restore", status: report.tools.pgRestore?.available === undefined ? "n/a" : report.tools.pgRestore.available ? "available" : "missing" },
+        { check: "pg_dump", status: toolStatus(report.tools.pgDump) },
+        { check: "pg_restore", status: toolStatus(report.tools.pgRestore) },
         { check: "Docker", status: report.tools.docker.cliAvailable ? (report.tools.docker.daemonAvailable ? "available" : "daemon unavailable") : "missing" },
         { check: "Docker PostgreSQL", status: report.tools.postgresContainer ? `${report.tools.postgresContainer.name} (${report.tools.postgresContainer.id})` : "not detected" }
       ]);
@@ -39,4 +40,10 @@ export function registerDoctorCommand(program: Command): void {
         reporter.warn(warning);
       }
     });
+}
+
+function toolStatus(tool: { available: boolean; version?: string } | undefined): string {
+  if (!tool) return "n/a";
+  if (!tool.available) return "missing";
+  return tool.version ? `available (${tool.version})` : "available";
 }

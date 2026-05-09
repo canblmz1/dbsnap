@@ -9,6 +9,7 @@ import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerInfoCommand } from "./commands/info.js";
 import { registerInitCommand } from "./commands/init.js";
 import { registerListCommand } from "./commands/list.js";
+import { registerPruneCommand } from "./commands/prune.js";
 import { registerRenameCommand } from "./commands/rename.js";
 import { registerRestoreCommand } from "./commands/restore.js";
 import { registerSaveCommand } from "./commands/save.js";
@@ -36,6 +37,7 @@ export function createProgram(): Command {
   registerSaveCommand(program);
   registerRestoreCommand(program);
   registerListCommand(program);
+  registerPruneCommand(program);
   registerDeleteCommand(program);
   registerRenameCommand(program);
   registerInfoCommand(program);

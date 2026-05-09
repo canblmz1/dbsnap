@@ -9,14 +9,15 @@ npm install -D @canblmz1/dbsnap
 npx dbsnap --help
 ```
 
-This package contains the typed Node API used by the CLI. It does not prompt, does not print to the terminal, redacts secrets, and enforces restore safety guards by default.
+This package contains the typed Node API used by the CLI. It does not prompt, does not print to the terminal, redacts secrets, and enforces local-development safety guards by default.
 
 ```ts
-import { saveSnapshot, restoreSnapshot, verifySnapshot } from "@canblmz1/dbsnap-core";
+import { saveSnapshot, restoreSnapshot, verifySnapshot, pruneSnapshots } from "@canblmz1/dbsnap-core";
 
 await saveSnapshot("checkout-ready");
 await restoreSnapshot("checkout-ready", { yes: true });
 await verifySnapshot("checkout-ready");
+await pruneSnapshots({ keepLast: 5, dryRun: true });
 ```
 
 dbsnap is for disposable local development databases. It is not a production backup tool.

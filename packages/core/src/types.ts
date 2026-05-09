@@ -78,6 +78,25 @@ export interface RenameSnapshotResult {
   metadata?: SnapshotMetadata;
 }
 
+export interface PruneSnapshotInfo {
+  name: string;
+  path: string;
+  createdAt: string;
+  sizeBytes: number;
+}
+
+export interface PruneSnapshotsResult {
+  snapshotsDir: string;
+  dryRun: boolean;
+  criteria: {
+    keepLast?: number;
+    olderThan?: string;
+    olderThanCutoff?: string;
+  };
+  pruned: PruneSnapshotInfo[];
+  kept: SnapshotInfo[];
+}
+
 export type VerifyCheckStatus = "pass" | "fail" | "warning" | "skip";
 
 export interface VerifyCheck {

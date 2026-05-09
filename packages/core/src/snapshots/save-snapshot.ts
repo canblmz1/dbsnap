@@ -3,11 +3,8 @@ import { getSqliteDatabasePath, saveSqliteSnapshot } from "../adapters/sqlite.js
 import { sanitizeParsedDatabaseUrl } from "../config/parse-database-url.js";
 import { loadDbsnapConfig } from "../config/load-config.js";
 import { assertLocalDatabase } from "../safety/assert-local-database.js";
-import { evaluateSafety } from "../safety/safety-check.js";
 import type { DbsnapBaseOptions, SnapshotOperationResult } from "../types.js";
-import { pathExists, safeRemoveDir } from "../utils/fs.js";
-import { DatabaseError } from "../utils/errors.js";
-import { normalizeForDisplay } from "../utils/paths.js";
+import { safeRemoveDir } from "../utils/fs.js";
 import { createSnapshotDir } from "./snapshot-paths.js";
 import { validateSnapshotName } from "./validate-snapshot-name.js";
 import { writeMetadata } from "./metadata.js";
@@ -17,15 +14,13 @@ export async function saveSnapshot(name: string, options: DbsnapBaseOptions = {}
   const config = await loadDbsnapConfig(options);
   const resolvedSqlitePath =
     config.database.type === "sqlite" ? getSqliteDatabasePath(config.projectRoot, config.database) : undefined;
-  const safety = evaluateSafety(config.database, { resolvedSqlitePath });
+  const safety = assertLocalDatabase(config.database, {
+    force: options.force,
+    operation: "save",
+    snapshotName,
+    resolvedSqlitePath
+  });
   const snapshotDir = await createSnapshotDir(config.snapshotsDir, snapshotName, { dryRun: options.dryRun });
-
-  if (options.dryRun && config.database.type === "sqlite" && resolvedSqlitePath && !(await pathExists(resolvedSqlitePath))) {
-    throw new DatabaseError(
-      `SQLite database file was not found at ${normalizeForDisplay(config.projectRoot, resolvedSqlitePath)}.`,
-      { code: "SQLITE_DATABASE_MISSING" }
-    );
-  }
 
   if (options.dryRun) {
     return {

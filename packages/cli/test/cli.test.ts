@@ -66,6 +66,7 @@ describe("CLI", () => {
     expect(output).toContain("save");
     expect(output).toContain("restore");
     expect(output).toContain("verify");
+    expect(output).toContain("prune");
   });
 
   it("prints version", async () => {
@@ -81,6 +82,25 @@ describe("CLI", () => {
       code: "commander.version"
     });
     expect(output.trim()).toBe(DBSNAP_VERSION);
+  });
+
+  it("keeps CLI version aligned with the publishable package version", async () => {
+    const cliPackage = JSON.parse(await fs.readFile(new URL("../package.json", import.meta.url), "utf8"));
+    expect(DBSNAP_VERSION).toBe(cliPackage.version);
+  });
+
+  it("keeps README CLI reference aligned with registered commands", async () => {
+    const readme = await fs.readFile(new URL("../../../README.md", import.meta.url), "utf8");
+    const reference = /## CLI Reference[\s\S]*?```bash\n(?<commands>[\s\S]*?)```/.exec(readme)?.groups?.commands ?? "";
+    const documented = reference
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("dbsnap "))
+      .map((line) => line.split(/\s+/)[1])
+      .filter((name) => !name.startsWith("--"));
+    const registered = createProgram().commands.map((command) => command.name());
+
+    expect(new Set(documented)).toEqual(new Set(registered));
   });
 
   it("detects direct CLI invocation through an npm bin symlink", async () => {
@@ -258,6 +278,26 @@ describe("CLI", () => {
     expect(
       parsed.checks.some((check: { name: string; status: string }) => check.name === "metadata" && check.status === "pass")
     ).toBe(true);
+  });
+
+  it("prints prune JSON and honors dry-run from the CLI", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+    await writeMetadata(path.join(root, ".dbsnaps", "old"), {
+      name: "old",
+      databaseType: "sqlite",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 1,
+      source: "dev.db",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+    const output = await captureStdout(async () => {
+      await createProgram().parseAsync(["node", "dbsnap", "--json", "--dry-run", "prune", "--keep-last", "0"]);
+    });
+    const parsed = JSON.parse(output);
+    expect(parsed.dryRun).toBe(true);
+    expect(parsed.pruned.map((snapshot: { name: string }) => snapshot.name)).toEqual(["old"]);
+    await expect(fs.stat(path.join(root, ".dbsnaps", "old"))).resolves.toBeTruthy();
   });
 
   it("enforces safety for restore through the CLI command path", async () => {

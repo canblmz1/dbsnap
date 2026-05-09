@@ -3,6 +3,7 @@ export { restoreSnapshot } from "./snapshots/restore-snapshot.js";
 export { listSnapshots, getSnapshotInfo } from "./snapshots/list-snapshots.js";
 export { deleteSnapshot } from "./snapshots/delete-snapshot.js";
 export { renameSnapshot } from "./snapshots/rename-snapshot.js";
+export { pruneSnapshots } from "./snapshots/prune-snapshots.js";
 export { verifySnapshot } from "./snapshots/verify-snapshot.js";
 export { loadDbsnapConfig, loadConfigFile, detectDatabaseUrl } from "./config/load-config.js";
 export { loadEnv } from "./config/load-env.js";
@@ -47,6 +48,8 @@ export type {
   ListSnapshotsResult,
   DeleteSnapshotResult,
   RenameSnapshotResult,
+  PruneSnapshotInfo,
+  PruneSnapshotsResult,
   VerifyCheck,
   VerifyCheckStatus,
   VerifySnapshotResult
@@ -64,3 +67,4 @@ export type { DockerStatus } from "./docker/detect-docker.js";
 export type { DockerContainer, DockerPortMapping } from "./docker/detect-postgres-container.js";
 export type { DoctorReport } from "./config/doctor.js";
 export type { SnapshotStore } from "./snapshots/snapshot-store.js";
+export type { PruneSnapshotsOptions } from "./snapshots/prune-snapshots.js";

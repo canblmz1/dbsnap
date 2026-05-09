@@ -8,6 +8,9 @@ Release-readiness hardening for the published scoped packages.
 - Added restore target mismatch protection using snapshot metadata, with `--allow-different-target` and `allowDifferentTarget` for explicit overrides.
 - Hardened child process execution by waiting for output stream completion, propagating input/output stream errors, and rejecting NUL bytes while allowing safe literal path characters with `shell: false`.
 - Added `dbsnap verify <name>` and `verifySnapshot()` for metadata/artifact checks.
+- Added `dbsnap prune` with `--keep-last`, `--older-than`, `--dry-run`, and `--json`.
+- Blocked `save` against remote or production-looking databases by default, keeping `--force-i-know-what-i-am-doing` as the explicit local-disposable override.
+- Improved `doctor` output with PostgreSQL client tool versions, DATABASE_URL source, Docker daemon guidance, and container matching warnings.
 - Added npm pack smoke testing that installs the tarballs into a temporary project and runs `npx dbsnap` commands.
 - Polished README/package docs for scoped npm install commands, visible safety boundaries, PostgreSQL tooling guidance, and npm-safe links.
 

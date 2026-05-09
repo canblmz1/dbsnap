@@ -1,6 +1,6 @@
 # Safety
 
-Restore is destructive, so dbsnap blocks risky targets by default.
+dbsnap is a local development snapshot tool, not a production backup tool. Saving and restoring are blocked for risky targets by default.
 
 ## Allowed By Default
 
@@ -18,6 +18,7 @@ Restore is destructive, so dbsnap blocks risky targets by default.
 ## Override
 
 ```bash
+dbsnap save snapshot-name --force-i-know-what-i-am-doing
 dbsnap restore snapshot-name --force-i-know-what-i-am-doing
 ```
 

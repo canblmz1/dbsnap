@@ -1,136 +1,120 @@
-# dbsnap Release Hardening Report
+# FIXES
 
-Date: 2026-05-09  
-Recommended next version: `0.9.0-beta.4`
+Date: 2026-05-09
 
-## Executive Summary
+## 1. Bulunan Kritik Buglar
 
-This pass focused on publish-after-install behavior, destructive restore safety, child process reliability, package smoke testing, docs accuracy, and release readiness.
+1. CLI/package/core sürümünün ve metadata `DBSNAP_VERSION` değerinin ayrı yerlerde yaşaması release sırasında mismatch riski yaratıyordu.
+2. Publish edilen binary yolu npm symlink üzerinden çağrıldığında CLI entrypoint davranışı kırılabiliyordu.
+3. `dbsnap verify <name>` README'de anlatılan gerçek CLI yüzeyinin parçası olmak zorundaydı; komutun register ve JSON davranışı regression kapsamına alındı.
+4. `save --dry-run` gerçek npm consumer smoke akışında SQLite dosyası yokken erken hata verebiliyordu.
+5. `save` remote veya production-looking DB'lere karşı guard kullanmadığı için araç yanlışlıkla production backup tool gibi kullanılabilirdi.
+6. Restore target mismatch davranışı force guard ile karışmaya açıktı; `force` ve `allowDifferentTarget` ayrı anlamlarda kalmalıydı.
+7. PostgreSQL/Docker fallback ve spawn davranışında stream flush, timeout, NUL byte, allowlist ve ambiguity davranışları release öncesi testle kilitlenmeliydi.
 
-Status: **GO for `0.9.0-beta.4` after publishing both packages and moving the `latest` dist-tag only after smoke testing.**
+## 2. Düzeltilenler
 
-## Critical Bugs Found
+- Root, CLI package, core package ve `DBSNAP_VERSION` `0.9.0-beta.4` üzerinde hizalı.
+- Version alignment testi eklendi; CLI `--version` package version ile aynı değeri basıyor.
+- Snapshot metadata `dbsnapVersion` aynı `DBSNAP_VERSION` sabitinden yazılıyor.
+- `dbsnap verify <name>` ve `dbsnap verify <name> --json` davranışı testlendi.
+- `dbsnap prune` eklendi:
+  - `--keep-last <count>`
+  - `--older-than <duration>`
+  - `--dry-run`
+  - `--json`
+- `save` artık remote veya production-looking database hedeflerini default olarak blokluyor; override için `--force-i-know-what-i-am-doing` gerekiyor.
+- `save --dry-run` DB dosyası henüz yokken consumer smoke preview olarak çalışıyor.
+- `doctor` çıktısı iyileştirildi:
+  - `DATABASE_URL` source
+  - `pg_dump` / `pg_restore` version
+  - Docker daemon/Desktop guidance
+  - Docker PostgreSQL container eşleşmeme veya ambiguity mesajı
+- `scripts/pack-smoke.mjs` genişletildi:
+  - core ve CLI tarball pack
+  - dist/README/LICENSE/package.json doğrulaması
+  - bin shebang doğrulaması
+  - public API import smoke
+  - `npx dbsnap --version`
+  - `npx dbsnap --help`
+  - `npx dbsnap init --dry-run`
+  - `DATABASE_URL=file:./dev.db npx dbsnap save test --dry-run`
+  - `DATABASE_URL=file:./dev.db npx dbsnap --json list`
+  - `npx --no-install dbsnap --version`
+  - npm script içinden `dbsnap`
+  - `pnpm exec dbsnap`
+  - Windows path boşluklu klasörde install/run
+- README ve `packages/cli/README.md` birebir hizalı.
+- `docs/issues/feature-priorities.md` eklendi.
+- `docs/publish-checklist.md` version bump source-of-truth akışını ve GitHub metadata önerilerini içeriyor.
 
-1. **Installed CLI could silently do nothing through npm bin symlinks.**  
-   The CLI entrypoint compared the literal module path with `process.argv[1]`, which can differ when npm/pnpm invokes a symlinked binary.
+## 3. Eklenen Testler
 
-2. **Restore could target the wrong local database if `DATABASE_URL` changed after saving.**  
-   The safety guard blocked remote and production-looking targets, but it did not verify that a snapshot created from one local DB was being restored into the same local DB.
+- Version mismatch regression:
+  - root package version
+  - core package version
+  - CLI package version
+  - CLI core dependency version
+  - `DBSNAP_VERSION`
+- README CLI reference ile register edilen CLI command listesinin eşleşmesi.
+- CLI help içinde `verify` ve `prune`.
+- CLI `prune --keep-last 0 --dry-run --json`.
+- Core `pruneSnapshots()` keep-last + older-than + dry-run.
+- `save --dry-run` SQLite dosyası yokken preview.
+- `save` remote DB guard ve force override.
+- `verifySnapshot()` missing metadata, missing artifact, size mismatch, database type mismatch.
+- PostgreSQL restore target identity:
+  - aynı host/port/db geçer
+  - farklı db name bloklanır
+  - farklı port bloklanır
+  - dry-run mismatch bilgisini döner
+- Force ve allowDifferentTarget ayrımı korunur.
+- Spawn:
+  - output stream finish beklenir
+  - output stream error propagate edilir
+  - input stream error propagate edilir
+  - timeout clean error'a dönüşür
+  - command allowlist dışı command reddedilir
+  - arg içinde boşluk ve `&` literal arg olarak güvenli çalışır
+  - NUL byte reddedilir
+- PostgreSQL execution planning:
+  - missing `pg_dump`
+  - Docker fallback
+  - Docker container ambiguity
 
-3. **PostgreSQL dump streams could resolve before the output file fully finished writing.**  
-   `pg_dump` Docker mode streamed stdout to a local file, but `runSpawn` previously resolved on child close without waiting for the output stream `finish` event.
+## 4. Kalan Riskler
 
-4. **Spawn argument safety blocked valid Windows/user paths while not modeling the real risk.**  
-   The blanket shell-metacharacter ban could reject safe literal args such as paths containing spaces or `&`, even though runtime uses `shell: false`.
+- PostgreSQL ve Docker testleri gerçek servis gerektirmeyen unit/mocked kapsamda; canlı PostgreSQL integration testi ayrı bir CI job olarak eklenebilir.
+- Snapshot compression bu release içinde uygulanmadı; planlandı.
+- First-party Vitest/Playwright helper export'ları planlandı.
+- MySQL adapter, shell completions, snapshot diff metadata, demo app ve TUI P2 olarak planlandı.
+- Büyük local DB performansı disk, dump size ve PostgreSQL tooling hızına bağlı.
 
-5. **CI did not test the actual npm tarball user path.**  
-   Typecheck/test/build could pass while the published package binary, files whitelist, shebang, or installed `npx dbsnap` workflow was broken.
+## 5. Yeni Özellik Önerileri
 
-## Fixes Made
+Shipped:
 
-- Fixed CLI entrypoint detection with `fs.realpathSync.native()` so npm/pnpm symlinked binaries invoke `main()` correctly.
-- Added `isDirectCliInvocation()` regression coverage.
-- Added restore target identity checks based on snapshot metadata:
-  - SQLite uses a resolved path identity.
-  - PostgreSQL uses host, port, and database name identity.
-- Added `--allow-different-target` to the CLI and `allowDifferentTarget?: boolean` to the Node API.
-- Kept remote/risky target override separate from target mismatch override; `--force-i-know-what-i-am-doing` does not bypass different-target protection.
-- Added `dbsnap verify <name>` and `verifySnapshot()` for snapshot metadata/artifact validation.
-- Hardened `runSpawn()`:
-  - waits for output stream `finish`
-  - propagates output stream errors
-  - propagates input stream errors
-  - keeps `shell: false`
-  - rejects NUL bytes
-  - allowlists runtime commands: `pg_dump`, `pg_restore`, `docker`
-  - redacts args in command error details
-- Added `pnpm pack:smoke`:
-  - runs `npm pack`
-  - validates tarball files
-  - checks CLI shebang
-  - installs core and CLI tarballs into a temp project
-  - imports public Node API exports from the installed CLI package
-  - runs `npx dbsnap --version`
-  - runs `npx dbsnap --help`
-  - runs `npx dbsnap init --dry-run`
-  - runs SQLite `save` and `restore`
-- Added CI pack smoke coverage on Ubuntu, macOS, and Windows for Node 20 and 22.
-- Updated README and package README:
-  - scoped install commands: `@canblmz1/dbsnap`
-  - npm-safe links
-  - badges
-  - visible production-backup warning
-  - PostgreSQL client tool guidance
-  - target mismatch safety docs
-  - `verify` command reference
-- Updated safety, SQLite, PostgreSQL, roadmap, and publish checklist docs.
-- Added `CHANGELOG.md`.
+- `dbsnap verify <name>`
+- `dbsnap prune`
+- Better doctor temel iyileştirmeleri
 
-## Tests Added
+Planned:
 
-- CLI direct invocation through npm-style symlink.
-- CLI help includes `verify`.
-- CLI JSON restore blocks different-target restore in non-interactive mode.
-- CLI `verify --json` output.
-- Core `verifySnapshot()` metadata/artifact checks.
-- SQLite different-target restore blocks by default.
-- SQLite different-target restore succeeds with `allowDifferentTarget`.
-- Different-target protection still applies when `force` bypasses remote safety.
-- Spawn waits for output stream finish.
-- Spawn propagates output stream errors.
-- Spawn propagates input stream errors.
-- Spawn allows spaces and `&` as literal args with `shell: false`.
-- Spawn rejects NUL bytes.
-- Spawn rejects unsupported commands.
-- Spawn reports timeouts after terminating child processes.
+- `save --compress gzip` ve compressed restore
+- `@canblmz1/dbsnap/vitest`
+- `@canblmz1/dbsnap/playwright`
+- shell completions
+- MySQL adapter
+- snapshot diff metadata
+- demo app / GIF
+- richer interactive TUI
 
-## Verification Run
+Detaylı task listesi: `docs/issues/feature-priorities.md`.
 
-Passed locally:
-
-```bash
-pnpm install --lockfile-only
-pnpm typecheck
-pnpm test
-pnpm build
-pnpm pack:smoke
-```
-
-Smoke-tested package behavior:
-
-```bash
-npm pack
-npm init -y
-npm install -D <core tarball> <cli tarball>
-npx dbsnap --version
-npx dbsnap --help
-npx dbsnap init --dry-run
-DATABASE_URL=file:./dev.db npx dbsnap save test
-DATABASE_URL=file:./dev.db npx dbsnap restore test --yes
-```
-
-## Known Limitations
-
-- PostgreSQL integration tests are mocked by default and do not require a real PostgreSQL server.
-- Docker tests are mocked by default and do not require a real Docker daemon.
-- SQLite in-memory databases cannot be snapshotted.
-- SQLite WAL sidecars are copied, but snapshots are most reliable when the app is not actively writing during `save`.
-- Large local databases may take longer to save and restore.
-- Compression, prune/retention policies, and first-party test-runner helpers are planned, not included in this release.
-
-## Planned Features
-
-1. `save --compress gzip` and compressed restore with backward-compatible metadata.
-2. `@canblmz1/dbsnap/vitest` and `@canblmz1/dbsnap/playwright` helper exports.
-3. Better `doctor` output with `pg_dump` / `pg_restore` versions and richer Docker mismatch explanations.
-4. `dbsnap prune --keep-last 5` and `dbsnap prune --older-than 7d`.
-5. Shell completions.
-
-## npm Publish Checklist
-
-Run from a clean working tree after CI is green:
+## 6. npm Publish Öncesi Komut Sırası
 
 ```bash
+pnpm install
 pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm test
@@ -138,26 +122,59 @@ pnpm build
 pnpm pack:smoke
 
 cd packages/core
+npm pack
 npm publish --access public --tag beta
 
 cd ../cli
+npm pack
 npm publish --access public --tag beta
-
-npm dist-tag add @canblmz1/dbsnap-core@0.9.0-beta.4 latest
-npm dist-tag add @canblmz1/dbsnap@0.9.0-beta.4 latest
-npm dist-tag ls @canblmz1/dbsnap-core
-npm dist-tag ls @canblmz1/dbsnap
 ```
 
-If npm web authentication returns `E403` for a dist-tag update, retry the same `npm dist-tag add` command after completing the browser authentication. The package publish can be successful even when a later dist-tag update fails.
+Version bump sırasında şu değerler birlikte güncellenmeli:
 
-## GitHub Launch Checklist
+- root `package.json`
+- `packages/core/package.json`
+- `packages/cli/package.json`
+- `packages/cli/package.json` içindeki `@canblmz1/dbsnap-core` dependency
+- `packages/core/src/snapshots/metadata.ts` içindeki `DBSNAP_VERSION`
+- `CHANGELOG.md`
 
-- Push the `0.9.0-beta.4` hardening commit.
-- Confirm GitHub Actions passes on Node 20 and 22 across Ubuntu, macOS, and Windows.
-- Confirm npm package pages show the updated README and version.
-- Confirm `npx dbsnap --version` reports `0.9.0-beta.4` in a fresh temp project.
-- Confirm npm dist-tags:
-  - `@canblmz1/dbsnap-core`: `latest` and `beta` point to `0.9.0-beta.4`
-  - `@canblmz1/dbsnap`: `latest` and `beta` point to `0.9.0-beta.4`
-- Publish launch posts only after the above smoke checks pass.
+## 7. Publish Sonrası Smoke Test Komutları
+
+```bash
+mkdir -p /tmp/dbsnap-smoke
+cd /tmp/dbsnap-smoke
+npm init -y
+npm install -D @canblmz1/dbsnap@0.9.0-beta.4
+npx dbsnap --version
+npx dbsnap --help
+npx dbsnap verify --help
+npx dbsnap init --dry-run
+DATABASE_URL=file:./dev.db npx dbsnap save test --dry-run
+DATABASE_URL=file:./dev.db npx dbsnap --json list
+```
+
+## Final Doğrulama Sonucu
+
+Passed locally on Windows:
+
+- `pnpm install`
+- `pnpm typecheck`
+- `pnpm test`
+  - core: 45 passed
+  - CLI: 18 passed
+- `pnpm build`
+- `pnpm pack:smoke`
+- `npm pack` for `@canblmz1/dbsnap-core`
+- `npm pack` for `@canblmz1/dbsnap`
+- temp consumer install with local core + CLI tarballs
+- `npx dbsnap --version` -> `0.9.0-beta.4`
+- `npx dbsnap --help`
+- `npx dbsnap verify --help`
+- `npx dbsnap init --dry-run`
+- `DATABASE_URL=file:./dev.db npx dbsnap save test --dry-run`
+- `DATABASE_URL=file:./dev.db npx dbsnap --json list`
+- README command smoke list
+- YAML parse:
+  - `.github/workflows/ci.yml`
+  - `pnpm-workspace.yaml`

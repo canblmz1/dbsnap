@@ -202,7 +202,7 @@ Avoid running tests in parallel against the same database unless your setup isol
 
 **dbsnap is safe by default.**
 
-Destructive restore is refused unless the target database looks local.
+Saving and restoring are refused unless the target database looks local. This keeps dbsnap scoped to disposable development data instead of turning it into an accidental production backup workflow.
 
 Allowed targets:
 
@@ -252,6 +252,8 @@ dbsnap doctor
 dbsnap save <name>
 dbsnap restore [name]
 dbsnap list
+dbsnap prune --keep-last <count>
+dbsnap prune --older-than <duration>
 dbsnap delete <name>
 dbsnap rename <old> <new>
 dbsnap info <name>
@@ -275,6 +277,13 @@ Options:
 ```
 
 For non-interactive JSON usage, destructive commands such as `restore` and `delete` require `--yes` or `--dry-run`.
+
+Prune examples:
+
+```bash
+dbsnap prune --keep-last 5 --dry-run
+dbsnap prune --older-than 7d --json
+```
 
 ## Node API
 
@@ -331,7 +340,6 @@ The value is the workflow around them:
 - Test-runner fixtures
 - Better interactive TUI
 - Shell completions
-- Retention and pruning policies
 
 ## Good First Issues
 

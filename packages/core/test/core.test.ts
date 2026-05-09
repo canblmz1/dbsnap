@@ -3,6 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { Readable, Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
+import { requireSuccessfulSpawn } from "../src/utils/spawn.js";
 import {
   assertLocalDatabase,
   assertAllowedCommand,
@@ -23,6 +24,7 @@ import {
   parseDatabaseUrl,
   parseDockerPorts,
   parseDockerPs,
+  pruneSnapshots,
   redactDatabaseUrl,
   redactSecrets,
   renameSnapshot,
@@ -55,6 +57,18 @@ describe("core exports", () => {
     expect(deleteSnapshot).toBeTypeOf("function");
     expect(getSnapshotInfo).toBeTypeOf("function");
     expect(loadDbsnapConfig).toBeTypeOf("function");
+    expect(pruneSnapshots).toBeTypeOf("function");
+  });
+
+  it("keeps package versions aligned with metadata version", async () => {
+    const rootPackage = JSON.parse(await fs.readFile(new URL("../../../package.json", import.meta.url), "utf8"));
+    const corePackage = JSON.parse(await fs.readFile(new URL("../package.json", import.meta.url), "utf8"));
+    const cliPackage = JSON.parse(await fs.readFile(new URL("../../cli/package.json", import.meta.url), "utf8"));
+
+    expect(DBSNAP_VERSION).toBe(rootPackage.version);
+    expect(DBSNAP_VERSION).toBe(corePackage.version);
+    expect(DBSNAP_VERSION).toBe(cliPackage.version);
+    expect(cliPackage.dependencies["@canblmz1/dbsnap-core"]).toBe(corePackage.version);
   });
 });
 
@@ -189,6 +203,33 @@ describe("SQLite snapshot lifecycle", () => {
     expect(failed.checks.find((check) => check.name === "size")?.status).toBe("fail");
   });
 
+  it("reports missing metadata, missing artifacts, and current type mismatches during verify", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    await write(root, ".dbsnaps/no-metadata/database.sqlite", "data");
+    const missingMetadata = await verifySnapshot("no-metadata", { projectRoot: root });
+    expect(missingMetadata.ok).toBe(false);
+    expect(missingMetadata.checks.find((check) => check.name === "metadata")?.status).toBe("fail");
+
+    await writeMetadata(path.join(root, ".dbsnaps", "no-artifact"), {
+      name: "no-artifact",
+      databaseType: "sqlite",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 4,
+      source: "dev.db",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+    const missingArtifact = await verifySnapshot("no-artifact", { projectRoot: root });
+    expect(missingArtifact.ok).toBe(false);
+    expect(missingArtifact.checks.find((check) => check.name === "artifact:database.sqlite")?.status).toBe("fail");
+
+    await write(root, ".env", "DATABASE_URL=postgres://localhost:5432/app_dev\n");
+    await write(root, ".dbsnaps/no-artifact/database.sqlite", "data");
+    const typeMismatch = await verifySnapshot("no-artifact", { projectRoot: root });
+    expect(typeMismatch.ok).toBe(false);
+    expect(typeMismatch.checks.find((check) => check.name === "database-type")?.status).toBe("fail");
+  });
+
   it("saves and restores SQLite WAL sidecar files", async () => {
     const root = await tempProject();
     await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
@@ -243,6 +284,45 @@ describe("SQLite snapshot lifecycle", () => {
     expect((await listSnapshots({ projectRoot: root })).snapshots).toHaveLength(0);
   });
 
+  it("prunes snapshots by keep-last and older-than without touching kept snapshots", async () => {
+    const root = await tempProject();
+    for (const [name, createdAt] of [
+      ["newest", "2026-01-09T00:00:00.000Z"],
+      ["middle", "2026-01-05T00:00:00.000Z"],
+      ["old", "2025-12-25T00:00:00.000Z"]
+    ] as const) {
+      await writeMetadata(path.join(root, ".dbsnaps", name), {
+        name,
+        databaseType: "sqlite",
+        createdAt,
+        sizeBytes: 1,
+        source: "dev.db",
+        dbsnapVersion: DBSNAP_VERSION
+      });
+    }
+
+    const dryRun = await pruneSnapshots({
+      projectRoot: root,
+      keepLast: 1,
+      olderThan: "7d",
+      dryRun: true,
+      now: () => new Date("2026-01-10T00:00:00.000Z")
+    });
+    expect(dryRun.pruned.map((snapshot) => snapshot.name)).toEqual(["old"]);
+    await expect(fs.stat(path.join(root, ".dbsnaps", "old"))).resolves.toBeTruthy();
+
+    const result = await pruneSnapshots({
+      projectRoot: root,
+      keepLast: 1,
+      olderThan: "7d",
+      now: () => new Date("2026-01-10T00:00:00.000Z")
+    });
+    expect(result.pruned.map((snapshot) => snapshot.name)).toEqual(["old"]);
+    await expect(fs.stat(path.join(root, ".dbsnaps", "old"))).rejects.toThrow();
+    await expect(fs.stat(path.join(root, ".dbsnaps", "newest"))).resolves.toBeTruthy();
+    await expect(fs.stat(path.join(root, ".dbsnaps", "middle"))).resolves.toBeTruthy();
+  });
+
   it("honors custom snapshots directory and dry-run", async () => {
     const root = await tempProject();
     await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
@@ -252,10 +332,32 @@ describe("SQLite snapshot lifecycle", () => {
     await expect(fs.stat(path.join(root, "custom-snaps"))).rejects.toThrow();
   });
 
+  it("lets save dry-run preview the action before a SQLite file exists", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\n");
+    const result = await saveSnapshot("dry-missing", { projectRoot: root, dryRun: true });
+
+    expect(result.dryRun).toBe(true);
+    expect(result.message).toContain('Would save snapshot "dry-missing"');
+    await expect(fs.stat(path.join(root, ".dbsnaps", "dry-missing"))).rejects.toThrow();
+  });
+
   it("throws friendly errors for missing SQLite files", async () => {
     const root = await tempProject();
     await write(root, ".env", "DATABASE_URL=file:./missing.db\n");
     await expect(saveSnapshot("missing", { projectRoot: root })).rejects.toThrow(/SQLite database file was not found/);
+  });
+
+  it("blocks save against remote or production-like databases by default", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=postgres://user:secret@db.example.com/app\n");
+
+    await expect(saveSnapshot("remote", { projectRoot: root, dryRun: true })).rejects.toThrow(
+      /does not look local/
+    );
+    await expect(saveSnapshot("remote", { projectRoot: root, dryRun: true, force: true })).resolves.toMatchObject({
+      dryRun: true
+    });
   });
 
   it("throws for corrupted metadata", async () => {
@@ -296,6 +398,33 @@ describe("SQLite snapshot lifecycle", () => {
     await expect(restoreSnapshot("pg", { projectRoot: root, force: true, yes: true })).rejects.toThrow(
       /different database target/
     );
+  });
+
+  it("checks PostgreSQL restore target identity by host, port, and database name", async () => {
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=postgres://localhost:5432/app_dev\n");
+    await writeMetadata(path.join(root, ".dbsnaps", "pg"), {
+      name: "pg",
+      databaseType: "postgres",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      sizeBytes: 4,
+      source: "localhost:5432/app_dev",
+      dbsnapVersion: DBSNAP_VERSION
+    });
+    await write(root, ".dbsnaps/pg/dump.pgcustom", "dump");
+
+    const sameTarget = await restoreSnapshot("pg", { projectRoot: root, dryRun: true });
+    expect(sameTarget.target?.matches).toBe(true);
+
+    await write(root, ".env", "DATABASE_URL=postgres://localhost:5432/other_dev\n");
+    await expect(restoreSnapshot("pg", { projectRoot: root, yes: true })).rejects.toThrow(/different database target/);
+
+    await write(root, ".env", "DATABASE_URL=postgres://localhost:5433/app_dev\n");
+    await expect(restoreSnapshot("pg", { projectRoot: root, yes: true })).rejects.toThrow(/different database target/);
+
+    const dryRunMismatch = await restoreSnapshot("pg", { projectRoot: root, dryRun: true });
+    expect(dryRunMismatch.target?.matches).toBe(false);
+    expect(dryRunMismatch.target?.currentSource).toBe("localhost:5433/app_dev");
   });
 });
 
@@ -388,6 +517,15 @@ describe("spawn helper", () => {
     });
     expect(result.timedOut).toBe(true);
     expect(result.exitCode).not.toBe(0);
+  });
+
+  it("turns timed out successful-spawn requirements into a clear error", async () => {
+    await expect(
+      requireSuccessfulSpawn(process.execPath, ["-e", "setTimeout(() => {}, 1000)"], {
+        timeoutMs: 20,
+        allowedCommands: ["node"]
+      })
+    ).rejects.toThrow(/timed out after 20ms/);
   });
 });
 
