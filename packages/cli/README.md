@@ -25,7 +25,11 @@ The npm package is `@canblmz1/dbsnap`; the installed CLI binary is `dbsnap`.
 
 ## Demo
 
-Demo GIF coming soon. Until then, use this terminal-sized flow or see the [demo script](https://github.com/canblmz1/dbsnap/blob/main/docs/demo-script.md).
+<p align="center">
+  <img src="https://raw.githubusercontent.com/canblmz1/dbsnap/main/assets/dbsnap-demo.gif" alt="dbsnap terminal demo" width="760">
+</p>
+
+See the [demo script](https://github.com/canblmz1/dbsnap/blob/main/docs/demo-script.md) for the full terminal flow.
 
 ```text
 UI: Users: 10
