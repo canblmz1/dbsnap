@@ -1,0 +1,14 @@
+{
+  "name": "dbsnap-example-vitest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "db:snap": "dbsnap save test-ready",
+    "db:restore": "dbsnap restore test-ready --yes"
+  },
+  "devDependencies": {
+    "dbsnap": "^0.9.0-beta.1",
+    "vitest": "^2.1.8"
+  }
+}

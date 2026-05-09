@@ -1,0 +1,20 @@
+{
+  "name": "dbsnap-example-drizzle-postgres",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:push": "drizzle-kit push",
+    "db:snap": "dbsnap save drizzle-ready",
+    "db:restore": "dbsnap restore drizzle-ready --yes"
+  },
+  "devDependencies": {
+    "dbsnap": "^0.9.0-beta.1",
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.0",
+    "pg": "^8.13.1"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "dbsnap-example-prisma-postgres-docker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:snap": "dbsnap save docker-ready --docker",
+    "db:restore": "dbsnap restore docker-ready --docker --yes"
+  },
+  "devDependencies": {
+    "dbsnap": "^0.9.0-beta.1",
+    "prisma": "^6.0.0"
+  }
+}

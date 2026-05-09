@@ -1,0 +1,66 @@
+{
+  "name": "dbsnap",
+  "version": "0.9.0-beta.1",
+  "description": "Time travel for your local development database.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/api.cjs",
+  "module": "./dist/api.js",
+  "types": "./dist/api.d.ts",
+  "bin": {
+    "dbsnap": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js",
+      "require": "./dist/api.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "keywords": [
+    "database",
+    "snapshot",
+    "postgres",
+    "postgresql",
+    "sqlite",
+    "prisma",
+    "drizzle",
+    "docker",
+    "testing",
+    "development",
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dbsnap/dbsnap.git"
+  },
+  "homepage": "https://github.com/dbsnap/dbsnap#readme",
+  "bugs": {
+    "url": "https://github.com/dbsnap/dbsnap/issues"
+  },
+  "scripts": {
+    "build": "tsup src/api.ts --format esm,cjs --dts --clean --sourcemap && tsup src/index.ts --format esm --clean false --sourcemap && node ./scripts/fix-bin.cjs",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dbsnap/core": "0.9.0-beta.1",
+    "commander": "^12.1.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

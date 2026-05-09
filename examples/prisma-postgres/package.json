@@ -1,0 +1,19 @@
+{
+  "name": "dbsnap-example-prisma-postgres",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "db:snap": "dbsnap save seeded",
+    "db:restore": "dbsnap restore seeded --yes"
+  },
+  "devDependencies": {
+    "dbsnap": "^0.9.0-beta.1",
+    "prisma": "^6.0.0",
+    "tsx": "^4.19.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0"
+  }
+}

@@ -1,0 +1,100 @@
+# Dependency folders and package-manager state
+node_modules/
+.pnpm-store/
+.yarn/
+.pnp.*
+.npm/
+
+# Build outputs and framework-generated artifacts
+dist/
+build/
+out/
+lib/
+coverage/
+.turbo/
+.next/
+.nuxt/
+.svelte-kit/
+.vite/
+.astro/
+
+# TypeScript, bundler, and cache artifacts
+*.tsbuildinfo
+.eslintcache
+.parcel-cache/
+.cache/
+.swc/
+.rpt2_cache/
+.rollup.cache/
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+!.env.test.example
+*.local
+.vercel
+.netlify
+
+# dbsnap snapshot artifacts and local database files
+# These are local development artifacts and must not be committed.
+# If an example ever needs a tiny committed SQLite fixture, whitelist it explicitly here.
+.dbsnaps/
+.dbsnap/
+dbsnaps/
+snapshots/
+*.pgdump
+*.pgcustom
+*.dump
+*.backup
+*.bak
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Docker and local runtime data
+docker-data/
+.docker-data/
+postgres-data/
+pgdata/
+tmp/
+temp/
+.tmp/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+junit.xml
+*.lcov
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# Package publishing artifacts
+*.tgz
+.npmrc.local
