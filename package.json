@@ -1,6 +1,6 @@
 {
   "name": "dbsnap-repo",
-  "version": "0.9.0-beta.1",
+  "version": "0.9.0-beta.2",
   "private": true,
   "description": "Time travel for your local development database.",
   "license": "MIT",

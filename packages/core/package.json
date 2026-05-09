@@ -1,6 +1,6 @@
 {
   "name": "@canblmz1/dbsnap-core",
-  "version": "0.9.0-beta.1",
+  "version": "0.9.0-beta.2",
   "description": "Core snapshot engine for dbsnap.",
   "license": "MIT",
   "type": "module",

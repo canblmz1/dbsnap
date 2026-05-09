@@ -4,7 +4,7 @@ import type { SnapshotMetadata } from "../types.js";
 import { readJsonFile, writeJsonFile } from "../utils/fs.js";
 import { SnapshotError } from "../utils/errors.js";
 
-export const DBSNAP_VERSION = "0.9.0-beta.1";
+export const DBSNAP_VERSION = "0.9.0-beta.2";
 export const METADATA_FILE = "metadata.json";
 
 export function metadataPath(snapshotDir: string): string {
