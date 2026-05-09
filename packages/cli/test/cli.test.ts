@@ -91,7 +91,7 @@ describe("CLI", () => {
 
   it("keeps README CLI reference aligned with registered commands", async () => {
     const readme = await fs.readFile(new URL("../../../README.md", import.meta.url), "utf8");
-    const reference = /## CLI Reference[\s\S]*?```bash\n(?<commands>[\s\S]*?)```/.exec(readme)?.groups?.commands ?? "";
+    const reference = /## CLI Reference[\s\S]*?```bash\r?\n(?<commands>[\s\S]*?)```/.exec(readme)?.groups?.commands ?? "";
     const documented = reference
       .split(/\r?\n/)
       .map((line) => line.trim())
