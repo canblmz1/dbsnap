@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0-beta.6
+
+Release polish for the npm beta after the final audit pass.
+
+- Expanded `doctor` output with runtime, config, SQLite, snapshot directory, Docker fallback, and safety diagnostics.
+- Strengthened `verify --json` failure exit behavior.
+- Expanded tarball smoke testing for `prune`, `verify`, JSON output, npm scripts, `pnpm exec`, and paths with spaces.
+- Aligned README/package docs with the real CLI command registry and global options.
+- Added `RELEASE_AUDIT.md` and updated the feature roadmap.
+
 ## 0.9.0-beta.5
 
 Republish release for the CI-stabilized release hardening changes.

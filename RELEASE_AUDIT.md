@@ -2,7 +2,7 @@
 
 ## Current version
 
-`0.9.0-beta.5`
+`0.9.0-beta.6`
 
 ## Smoke tested commands
 
@@ -21,11 +21,11 @@ Final local verification passed on Windows with:
 - `pnpm build`
 - `pnpm pack:smoke`
 - temp consumer install of `@canblmz1/dbsnap@beta`
-- `npx dbsnap --version` -> `0.9.0-beta.5`
+- `npx dbsnap --version` -> `0.9.0-beta.6`
 
 ## Fixed Issues
 
-- Aligned root, CLI, core, lockfile, examples, and metadata version values at `0.9.0-beta.5`.
+- Aligned root, CLI, core, lockfile, examples, and metadata version values at `0.9.0-beta.6`.
 - Kept `dbsnap --version` tied to the core metadata version and covered it with regression tests.
 - Verified that `prune` and `verify` are registered CLI commands and public Node API exports.
 - Reworked README CLI Reference into a command table that matches the real command registry.
@@ -64,7 +64,7 @@ https://github.com/canblmz1/dbsnap#readme
 
 ## Recommended Release Note
 
-## v0.9.0-beta.5
+## v0.9.0-beta.6
 
 ### Fixed
 

@@ -14,7 +14,7 @@ Date: 2026-05-09
 
 ## Fixed
 
-- Version alignment is locked to `0.9.0-beta.5`.
+- Version alignment is locked to `0.9.0-beta.6`.
 - `dbsnap --version` matches the publishable package version.
 - `pruneSnapshots` and `verifySnapshot` are public exports.
 - `dbsnap prune` and `dbsnap verify` are registered commands.
@@ -41,7 +41,7 @@ Date: 2026-05-09
 - `pnpm build`
 - `pnpm pack:smoke`
 - Published npm smoke with `@canblmz1/dbsnap@beta`
-- `npx dbsnap --version` -> `0.9.0-beta.5`
+- `npx dbsnap --version` -> `0.9.0-beta.6`
 - `npx dbsnap --help`, `init --dry-run`, `list --json`, `prune --help`, and `verify --help`
 
 ## Remaining Risks
