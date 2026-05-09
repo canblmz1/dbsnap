@@ -12,7 +12,7 @@
   "module": "./dist/api.js",
   "types": "./dist/api.d.ts",
   "bin": {
-    "dbsnap": "./dist/index.js"
+    "dbsnap": "dist/index.js"
   },
   "exports": {
     ".": {
