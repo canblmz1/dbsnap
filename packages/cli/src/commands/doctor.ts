@@ -6,7 +6,7 @@ import { readCliOptions } from "./options.js";
 export function registerDoctorCommand(program: Command): void {
   program
     .command("doctor")
-    .description("Check dbsnap configuration, safety, and local tooling")
+    .description("Check DATABASE_URL, safety guards, snapshots, and local tooling")
     .action(async function (this: Command) {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });

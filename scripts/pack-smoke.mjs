@@ -118,7 +118,7 @@ if (version !== cliPackage.version) {
 }
 
 const help = run(npx, ["dbsnap", "--help"], { cwd: temp });
-if (!help.includes("Time travel for your local development database") || !help.includes("verify") || !help.includes("prune")) {
+if (!help.includes("Fast local database checkpoints for Prisma, Drizzle, Playwright and Vitest") || !help.includes("verify") || !help.includes("prune")) {
   throw new Error("dbsnap --help did not include expected help text.");
 }
 
@@ -128,7 +128,7 @@ if (!pruneHelp.includes("--keep-last") || !pruneHelp.includes("--older-than")) {
 }
 
 const verifyHelp = run(npx, ["dbsnap", "verify", "--help"], { cwd: temp });
-if (!verifyHelp.includes("Verify snapshot metadata and artifacts")) {
+if (!verifyHelp.includes("Verify checkpoint metadata and artifacts")) {
   throw new Error("dbsnap verify --help did not include expected help text.");
 }
 

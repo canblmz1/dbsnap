@@ -7,8 +7,8 @@ import { readCliOptions } from "./options.js";
 export function registerRestoreCommand(program: Command): void {
   program
     .command("restore")
-    .description("Restore a saved database snapshot")
-    .argument("[name]", "Snapshot name")
+    .description("Destructively restore a saved local database checkpoint")
+    .argument("[name]", "Checkpoint name")
     .action(async function (this: Command, name?: string) {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });

@@ -31,7 +31,8 @@ export async function restoreSnapshot(name: string, options: DbsnapBaseOptions =
     force: options.force,
     operation: "restore",
     snapshotName,
-    resolvedSqlitePath
+    resolvedSqlitePath,
+    nodeEnv: config.env.values.NODE_ENV
   });
   const target = evaluateSnapshotTarget(metadata, config.database, {
     projectRoot: config.projectRoot,

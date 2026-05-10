@@ -2,7 +2,9 @@
 
 ## Current version
 
-`0.9.0-beta.6`
+`0.9.0-beta.7`
+
+Registry status checked on 2026-05-10: npm `@beta` and `latest` still point to `0.9.0-beta.6`. Publish `0.9.0-beta.7` before expecting public `npx @canblmz1/dbsnap@beta` smoke tests to match this repository state.
 
 ## Smoke tested commands
 
@@ -17,15 +19,15 @@ Final local verification passed on Windows with:
 
 - `pnpm install`
 - `pnpm typecheck`
-- `pnpm test` (`48` core tests, `22` CLI tests)
+- `pnpm test` (`51` core tests, `22` CLI tests)
 - `pnpm build`
 - `pnpm pack:smoke`
-- temp consumer install of `@canblmz1/dbsnap@beta`
-- `npx dbsnap --version` -> `0.9.0-beta.6`
+- temp consumer install from the local publishable tarballs
+- `npx dbsnap --version` -> `0.9.0-beta.7`
 
 ## Fixed Issues
 
-- Aligned root, CLI, core, lockfile, examples, and metadata version values at `0.9.0-beta.6`.
+- Aligned root, CLI, core, lockfile, examples, and metadata version values at `0.9.0-beta.7`.
 - Kept `dbsnap --version` tied to the core metadata version and covered it with regression tests.
 - Verified that `prune` and `verify` are registered CLI commands and public Node API exports.
 - Reworked README CLI Reference into a command table that matches the real command registry.
@@ -47,7 +49,7 @@ Final local verification passed on Windows with:
 Description:
 
 ```text
-Time travel for local development databases. Save and restore PostgreSQL/SQLite states for Prisma, Drizzle, Vitest and Playwright.
+Fast local database checkpoints for Prisma, Drizzle, Playwright and Vitest.
 ```
 
 Topics:
@@ -64,7 +66,7 @@ https://github.com/canblmz1/dbsnap#readme
 
 ## Recommended Release Note
 
-## v0.9.0-beta.6
+## v0.9.0-beta.7
 
 ### Fixed
 
@@ -75,6 +77,9 @@ https://github.com/canblmz1/dbsnap#readme
 - Aligned CLI/core package versions.
 - Hardened restore safety checks.
 - Improved `doctor` diagnostics.
+- Repositioned README and examples around local development checkpoints.
+- Added benchmark methodology and safe benchmark runner.
+- Added `NODE_ENV=production` safety blocking.
 
 ### Notes
 

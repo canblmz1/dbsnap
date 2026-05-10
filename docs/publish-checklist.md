@@ -27,7 +27,7 @@
 - [ ] Confirm docs match behavior
 - [ ] Confirm package exports
 - [ ] Confirm `files` whitelist
-- [ ] Confirm version is `0.9.0-beta.5`
+- [ ] Confirm version is the next unpublished npm version.
 - [ ] Confirm `dbsnap restore` different-target guard behavior
 - [ ] Publish `@canblmz1/dbsnap-core` with the `beta` dist-tag before `@canblmz1/dbsnap`
 - [ ] Publish `@canblmz1/dbsnap` with the `beta` dist-tag
@@ -35,6 +35,6 @@
 
 ## GitHub Repository Metadata
 
-- Description: `Time travel for your local development database.`
+- Description: `Fast local database checkpoints for Prisma, Drizzle, Playwright and Vitest.`
 - Topics: `database`, `snapshot`, `postgresql`, `sqlite`, `prisma`, `drizzle`, `docker`, `testing`, `developer-tools`, `typescript`
 - Website/docs link: `https://github.com/canblmz1/dbsnap#readme`

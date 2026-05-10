@@ -6,9 +6,9 @@ import { readCliOptions } from "./options.js";
 export function registerRenameCommand(program: Command): void {
   program
     .command("rename")
-    .description("Rename a saved snapshot")
-    .argument("<old>", "Current snapshot name")
-    .argument("<new>", "New snapshot name")
+    .description("Rename a saved checkpoint")
+    .argument("<old>", "Current checkpoint name")
+    .argument("<new>", "New checkpoint name")
     .action(async function (this: Command, oldName: string, newName: string) {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });

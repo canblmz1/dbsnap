@@ -6,8 +6,8 @@ import { readCliOptions } from "./options.js";
 export function registerSaveCommand(program: Command): void {
   program
     .command("save")
-    .description("Save the current local database state")
-    .argument("<name>", "Snapshot name")
+    .description("Create a named checkpoint of the current local database")
+    .argument("<name>", "Checkpoint name")
     .action(async function (this: Command, name: string) {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });

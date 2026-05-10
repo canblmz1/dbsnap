@@ -1,6 +1,6 @@
 # Fixes
 
-Date: 2026-05-09
+Date: 2026-05-10
 
 ## Critical Bugs Found
 
@@ -14,7 +14,7 @@ Date: 2026-05-09
 
 ## Fixed
 
-- Version alignment is locked to `0.9.0-beta.6`.
+- Version alignment is locked to `0.9.0-beta.7`.
 - `dbsnap --version` matches the publishable package version.
 - `pruneSnapshots` and `verifySnapshot` are public exports.
 - `dbsnap prune` and `dbsnap verify` are registered commands.
@@ -37,11 +37,12 @@ Date: 2026-05-09
 
 - `pnpm install`
 - `pnpm typecheck`
-- `pnpm test` (`48` core tests, `22` CLI tests)
+- `pnpm test` (`51` core tests, `22` CLI tests)
 - `pnpm build`
 - `pnpm pack:smoke`
-- Published npm smoke with `@canblmz1/dbsnap@beta`
-- `npx dbsnap --version` -> `0.9.0-beta.6`
+- Local publishable tarball smoke with `@canblmz1/dbsnap` and `@canblmz1/dbsnap-core`
+- npm registry `@beta` currently points to `0.9.0-beta.6`; publish `0.9.0-beta.7` before public registry smoke should match this repo.
+- `npx dbsnap --version` -> `0.9.0-beta.7`
 - `npx dbsnap --help`, `init --dry-run`, `list --json`, `prune --help`, and `verify --help`
 
 ## Remaining Risks

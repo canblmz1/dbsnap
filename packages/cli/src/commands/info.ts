@@ -6,8 +6,8 @@ import { readCliOptions } from "./options.js";
 export function registerInfoCommand(program: Command): void {
   program
     .command("info")
-    .description("Show details for one snapshot")
-    .argument("<name>", "Snapshot name")
+    .description("Show metadata and artifact details for one checkpoint")
+    .argument("<name>", "Checkpoint name")
     .action(async function (this: Command, name: string) {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });

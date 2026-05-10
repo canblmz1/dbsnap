@@ -14,6 +14,7 @@ dbsnap is a local development snapshot tool, not a production backup tool. Savin
 - Non-local PostgreSQL hosts
 - Hosted providers such as RDS, Supabase, Neon, Railway, Render, and Fly
 - Database names or paths containing `prod`, `production`, `staging`, or `live`
+- `NODE_ENV=production`
 
 ## Overrides
 

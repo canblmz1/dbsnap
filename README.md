@@ -5,184 +5,188 @@
 [![license](https://img.shields.io/npm/l/@canblmz1/dbsnap.svg)](https://github.com/canblmz1/dbsnap/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6.svg)](https://www.typescriptlang.org/)
 
-**Time travel for your local development database.**
+**Fast local database checkpoints for Prisma, Drizzle, Playwright and Vitest.**
 
-Stop re-running migrations, seeds, and UI setup flows just to recreate the same local database state.
-
-```bash
-npm install -D @canblmz1/dbsnap
-npx dbsnap save checkout-ready
-# break your local database while developing
-npx dbsnap restore checkout-ready
-```
-
-Works with PostgreSQL, SQLite, Prisma, Drizzle, Docker, Vitest, and Playwright.
-The npm package is `@canblmz1/dbsnap`; the installed CLI binary is `dbsnap`.
-
-> [!WARNING]
-> dbsnap is not a production backup tool. It is for disposable local development databases.
-> Do not commit `.dbsnaps/`, `.env`, local SQLite files, PostgreSQL dumps, or other snapshot artifacts.
-
-## Demo
+Save a known-good local DB state, break things during development or tests, then restore it with one command.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/canblmz1/dbsnap/main/assets/dbsnap-demo.gif" alt="dbsnap terminal demo" width="760">
 </p>
 
-See the [demo script](https://github.com/canblmz1/dbsnap/blob/main/docs/demo-script.md) for the full terminal flow.
+`dbsnap` is an npm CLI for disposable local PostgreSQL and SQLite databases. Snapshot your local dev/test database once, restore it before tests or risky migrations, and stop rebuilding seed data manually.
 
-```text
-UI: Users: 10
-$ npx dbsnap save ten-users
-Saved snapshot "ten-users".
+> [!WARNING]
+> dbsnap is not a production backup tool. Restore is destructive. Use it only with local development and test databases.
 
-# delete all users
-UI: Users: 0
+## Why dbsnap exists
 
-$ npx dbsnap restore ten-users --yes
-Restored snapshot "ten-users".
-UI: Users: 10
+Local database state is often the slowest part of a development loop:
+
+- you re-run seeds repeatedly
+- you manually recreate users, carts, permissions, roles, subscriptions, and test data
+- a migration breaks your local database while you are experimenting
+- Playwright E2E tests leave the database dirty
+- Vitest integration tests need the same known-good state again and again
+- ad-hoc `pg_dump` scripts start simple, then grow naming, safety, Docker, and cleanup edge cases
+
+`dbsnap` gives that workflow a small, boring, repeatable shape:
+
+```bash
+dbsnap save checkout-ready
+# run risky code, migrations, manual QA, or tests
+dbsnap restore checkout-ready --yes
 ```
 
-## Quick Start
+## Install
+
+Run with `npx`:
+
+```bash
+npx @canblmz1/dbsnap --help
+```
+
+Run with `pnpm dlx`:
+
+```bash
+pnpm dlx @canblmz1/dbsnap --help
+```
+
+Install in a project:
 
 ```bash
 npm install -D @canblmz1/dbsnap
-npx dbsnap --help
-npx dbsnap init
-npx dbsnap save dev-ready
-```
-
-Then make a mess and come back:
-
-```bash
-npx dbsnap restore dev-ready
-```
-
-Using pnpm:
-
-```bash
 pnpm add -D @canblmz1/dbsnap
-pnpm exec dbsnap --help
-pnpm exec dbsnap init
-pnpm exec dbsnap save dev-ready
-pnpm exec dbsnap restore dev-ready
 ```
 
-Small local development databases usually restore quickly. Larger databases depend on dump size, disk speed, and PostgreSQL tooling, so save/restore can take noticeable time.
-
-## The Problem
-
-You are testing checkout.
-
-You run migrations. You run seed scripts. You click through the app to create the perfect cart state: user logged in, cart populated, discount applied, payment step ready.
-
-Then your test changes or corrupts the local database.
-
-Now you have to repeat the entire setup flow.
-
-`dbsnap` saves that useful state once:
+Global install is useful when you want the same CLI across many local projects:
 
 ```bash
-npx dbsnap save checkout-ready
+npm install -g @canblmz1/dbsnap
+dbsnap --help
 ```
 
-Then you can restore it later without rebuilding the state manually:
+The npm package is `@canblmz1/dbsnap`. The CLI binary is `dbsnap`.
 
-```bash
-npx dbsnap restore checkout-ready
-```
+## 60-second quickstart
 
-## Supported Workflows
-
-- SQLite local files
-- PostgreSQL via `pg_dump` / `pg_restore`
-- Docker PostgreSQL
-- Prisma projects
-- Drizzle projects
-- Vitest / Playwright test setup
-
-## SQLite
+1. Point dbsnap at a local database:
 
 ```env
 DATABASE_URL="file:./dev.db"
 ```
 
-```bash
-npx dbsnap save checkout-ready
-npx dbsnap restore checkout-ready --yes
-```
-
-SQLite snapshots are file copies stored under:
-
-```text
-.dbsnaps/<name>/database.sqlite
-```
-
-If your SQLite database is in WAL mode, dbsnap also stores the matching `-wal` and `-shm` sidecar files. For the most reliable snapshot, pause writes before saving.
-
-## PostgreSQL
+or:
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/app_dev"
 ```
 
-```bash
-npx dbsnap doctor
-npx dbsnap save seed-ready
-npx dbsnap restore seed-ready --yes
-```
-
-PostgreSQL snapshots use `pg_dump --format=custom` and `pg_restore --clean --if-exists --no-owner`.
-
-`dbsnap` is designed for local development databases. Large databases may take longer to save and restore.
-PostgreSQL support requires local `pg_dump` / `pg_restore` binaries or Docker fallback.
-
-### PostgreSQL Client Tools
-
-| Platform | Install guidance |
-| --- | --- |
-| macOS | `brew install libpq` or `brew install postgresql@16`; make sure `pg_dump` and `pg_restore` are on `PATH`. |
-| Windows | Install PostgreSQL from the official installer and add the `bin` folder to `PATH`, or use Docker mode. |
-| Linux | Install your distro package such as `postgresql-client` or `postgresql-client-16`. |
-
-## Docker PostgreSQL
-
-If local `pg_dump` or `pg_restore` is missing, dbsnap can use a matching PostgreSQL Docker container.
+2. Check the environment before doing anything destructive:
 
 ```bash
 npx dbsnap doctor
-npx dbsnap save docker-ready --docker
-npx dbsnap restore docker-ready --docker --yes
 ```
 
-Docker matching uses the exposed PostgreSQL port from `DATABASE_URL`. If multiple containers match, dbsnap stops and asks for an explicit choice.
+3. Save a known-good checkpoint:
 
-On Windows, Docker mode expects Docker Desktop to be running and the container port to be published to the host.
+```bash
+npx dbsnap save checkout-ready
+```
 
-## Prisma
+4. Break things locally:
+
+```bash
+# run migrations, tests, manual QA, or experiments
+```
+
+5. Restore the checkpoint:
+
+```bash
+npx dbsnap restore checkout-ready --yes
+```
+
+6. List what you have:
+
+```bash
+npx dbsnap list
+```
+
+## Best use cases
+
+- Save a checkpoint before risky migrations.
+- Save a seeded app state before manual QA.
+- Restore a known state before Playwright E2E tests.
+- Reset local integration test data in Vitest.
+- Switch between feature branches without rebuilding the same data every time.
+- Keep multiple named local states like `empty`, `seeded`, `checkout-ready`, and `admin-ready`.
+
+## Prisma example
 
 ```bash
 pnpm prisma migrate dev
 pnpm prisma db seed
+pnpm exec dbsnap doctor
 pnpm exec dbsnap save seeded
 ```
 
-`dbsnap init` detects `prisma/schema.prisma`, `.env`, `.env.local`, and `DATABASE_URL`.
-
-## Drizzle
+Later:
 
 ```bash
-pnpm drizzle-kit push
-pnpm tsx seed.ts
-pnpm exec dbsnap save drizzle-ready
+pnpm exec dbsnap restore seeded --yes
 ```
 
-`dbsnap init` detects `drizzle.config.ts`.
+`dbsnap doctor` detects `prisma/schema.prisma`, `.env`, `.env.local`, and the active `DATABASE_URL` source.
 
-## Vitest
+## Drizzle example
+
+```bash
+pnpm drizzle-kit migrate
+pnpm tsx scripts/seed.ts
+pnpm exec dbsnap doctor
+pnpm exec dbsnap save seeded
+```
+
+Later:
+
+```bash
+pnpm exec dbsnap restore seeded --yes
+```
+
+`dbsnap doctor` detects `drizzle.config.ts`. See [examples/drizzle-vitest](https://github.com/canblmz1/dbsnap/tree/main/examples/drizzle-vitest) for a Vitest-oriented skeleton.
+
+## Playwright fixture example
+
+Use a global setup when every test should begin from the same checkpoint:
 
 ```ts
+// tests/global-setup.ts
+import { restoreSnapshot } from "@canblmz1/dbsnap";
+
+export default async function globalSetup() {
+  await restoreSnapshot("e2e-ready", { yes: true });
+}
+```
+
+```ts
+// playwright.config.ts
+import { defineConfig } from "@playwright/test";
+
+export default defineConfig({
+  globalSetup: "./tests/global-setup.ts",
+  workers: 1,
+});
+```
+
+If you run tests in parallel, use one database per worker or restore once per isolated worker database. Restoring the same database while other tests are writing to it will be flaky.
+
+See [examples/prisma-playwright](https://github.com/canblmz1/dbsnap/tree/main/examples/prisma-playwright) for a Prisma + Playwright skeleton.
+
+## Vitest example
+
+Restore before integration tests:
+
+```ts
+// test/setup.ts
 import { beforeEach } from "vitest";
 import { restoreSnapshot } from "@canblmz1/dbsnap";
 
@@ -191,67 +195,52 @@ beforeEach(async () => {
 });
 ```
 
-## Playwright
-
 ```ts
-import { test } from "@playwright/test";
-import { restoreSnapshot } from "@canblmz1/dbsnap";
+// vitest.config.ts
+import { defineConfig } from "vitest/config";
 
-test.beforeEach(async () => {
-  await restoreSnapshot("checkout-ready", { yes: true });
+export default defineConfig({
+  test: {
+    setupFiles: ["./test/setup.ts"],
+    poolOptions: {
+      threads: { singleThread: true },
+    },
+  },
 });
 ```
 
-Avoid running tests in parallel against the same database unless your setup isolates state per worker.
+For parallel tests, prefer one isolated database per worker. See [examples/drizzle-vitest](https://github.com/canblmz1/dbsnap/tree/main/examples/drizzle-vitest).
 
 ## Safety
 
-**dbsnap is safe by default.**
+Put this near the top of your mental model: **restore replaces the current local database state.**
 
-Saving and restoring are refused unless the target database looks local. This keeps dbsnap scoped to disposable development data instead of turning it into an accidental production backup workflow.
+dbsnap is built for local development and test databases, not production backups or disaster recovery. It intentionally tries to make dangerous usage noisy:
 
-Allowed targets:
+- `save` and `restore` refuse non-local PostgreSQL hosts by default.
+- SQLite paths and PostgreSQL database names containing `prod`, `production`, `staging`, or `live` are blocked by default.
+- `NODE_ENV=production` is blocked by default.
+- Restore checks whether the snapshot was saved from a different database target.
+- JSON/non-interactive restore refuses to wait for prompts.
+- Database URLs and known secret fields are redacted in logs, metadata output, and debug output.
+- `dbsnap init` adds the snapshots directory to `.gitignore`.
 
-- `localhost`
-- `127.0.0.1`
-- `::1`
-- local SQLite files
+Use `dbsnap doctor` before restore when you are not sure what dbsnap will touch:
 
-Blocked by default:
+```bash
+npx dbsnap doctor
+```
 
-- hosted PostgreSQL providers
-- non-local hosts
-- database names or paths containing `prod`, `production`, `staging`, or `live`
-
-Override the remote/risky target guard only when you are certain the database is disposable:
+There are two separate escape hatches:
 
 ```bash
 npx dbsnap restore snapshot-name --force-i-know-what-i-am-doing
-```
-
-dbsnap also records the database target that created each snapshot. If you try to restore a snapshot into a different local database, dbsnap asks for explicit confirmation. In non-interactive usage, pass this only when intentional:
-
-```bash
 npx dbsnap restore snapshot-name --allow-different-target --yes
 ```
 
-These flags are intentionally different. `--force-i-know-what-i-am-doing` is only for the risky/remote database guard. `--allow-different-target` is only for restoring a snapshot into a different local database target. One flag does not bypass the other.
+`--force-i-know-what-i-am-doing` is only for the risky/remote database guard. `--allow-different-target` is only for restoring a snapshot into a different local database target. One does not bypass the other.
 
-Secrets are redacted in normal and debug output. Raw database URLs with credentials are never printed.
-
-dbsnap snapshots are local artifacts and should not be committed. `dbsnap init` adds the snapshots directory to `.gitignore`.
-Users should still avoid committing `.env` files or any file containing database credentials.
-
-## Not A Production Backup Tool
-
-`dbsnap` is not:
-
-- a production backup system
-- a migration tool
-- a cloud database branching service
-- a disaster recovery solution
-
-It is a local development workflow tool for disposable local databases.
+Do not commit `.dbsnaps/`, `.env`, local SQLite files, PostgreSQL dumps, or snapshot artifacts.
 
 ## CLI Reference
 
@@ -260,7 +249,7 @@ It is a local development workflow tool for disposable local databases.
 | `dbsnap init` | Initialize dbsnap in this project |
 | `dbsnap doctor` | Check configuration, safety, and local tooling |
 | `dbsnap save <name>` | Save the current local database state |
-| `dbsnap restore [name]` | Restore a saved database snapshot |
+| `dbsnap restore [name]` | Destructively restore a saved database snapshot |
 | `dbsnap list` | List saved database snapshots |
 | `dbsnap prune [options]` | Delete old snapshots by retention policy |
 | `dbsnap delete <name>` | Delete a saved snapshot |
@@ -284,8 +273,6 @@ Global options:
 | `--force-i-know-what-i-am-doing` | Allow save/restore to a database dbsnap considers risky |
 | `--allow-different-target` | Allow restore when the snapshot was saved from a different database target |
 
-For non-interactive JSON usage, destructive commands such as `restore` and `delete` require `--yes` or `--dry-run`.
-
 Prune examples:
 
 ```bash
@@ -300,78 +287,97 @@ import {
   saveSnapshot,
   restoreSnapshot,
   listSnapshots,
-  deleteSnapshot,
-  getSnapshotInfo,
   verifySnapshot,
   pruneSnapshots,
-  loadDbsnapConfig,
 } from "@canblmz1/dbsnap";
 
 await saveSnapshot("checkout-ready");
 await restoreSnapshot("checkout-ready", { yes: true });
+await verifySnapshot("checkout-ready");
 await pruneSnapshots({ keepLast: 5, dryRun: true });
 ```
 
-The API is typed, does not prompt, does not print to the terminal, and enforces safety by default.
-
-Use `allowDifferentTarget: true` only when intentionally restoring a snapshot into a different local database.
-
-## Why Not Just Use pg_dump?
-
-You can. `dbsnap` uses boring database primitives under the hood.
-
-The value is the workflow around them:
-
-- named snapshots
-- metadata
-- `.env` detection
-- SQLite + PostgreSQL support
-- Docker-aware PostgreSQL
-- safety guards
-- source-target mismatch checks
-- secret redaction
-- test-runner API
-- friendly CLI output
+The API is typed, does not prompt, does not print to the terminal, and enforces the same safety checks as the CLI.
 
 ## Comparison
 
-| Approach | What happens |
-| --- | --- |
-| `pg_dump` scripts | Powerful, but every repo reinvents naming, safety, redaction, Docker, and DX. |
-| Docker volume hacks | Fast until you need named states, metadata, SQLite, or cross-platform behavior. |
-| Cloud database branching | Great for hosted workflows; overkill for a local dev database on a laptop. |
-| dbsnap | Local, named snapshots with safety guards and a small CLI. |
+This table is positioning guidance, not a benchmark. Tools make different tradeoffs.
+
+| Approach | Local-first | Node/TS friendly | Prisma/Drizzle examples | Playwright/Vitest examples | SQLite | PostgreSQL | Named snapshots | Safety guards | Ease of setup |
+|---|---|---|---|---|---|---|---|---|---|
+| dbsnap | Yes | Yes, npm package and typed API | Yes | Yes | Yes | Yes | Yes | Built in | Small npm install |
+| pg_dump script | Yes | Manual glue | Manual | Manual | No | Yes | Manual naming | Manual | Starts easy, grows scripts |
+| Docker volume snapshot | Yes, if DB is in Docker | Not directly | Manual | Manual | Volume-level only | Yes | Manual | Manual | Medium; platform-specific edges |
+| Prisma seed / Drizzle seed | Yes | Yes | Native fit | Works, but rebuilds data | Yes | Yes | No, rebuilds state | Depends on app code | Good when seed data is enough |
+| Snaplet | Often team/data-workflow oriented | JavaScript ecosystem tooling | Different focus | Different focus | Not dbsnap's focus | Yes for supported workflows | Product-specific | Data transform/de-identification focus | More setup than a local checkpoint CLI |
+| DSLR | Local Postgres focus | Python CLI | Manual | Manual | No | Yes | Yes | Different safety model | Good if you want Postgres template snapshots |
+| pgbranch | Local Postgres branching focus | Go CLI | Manual | Manual | No | Yes | Branch-style states | Different safety model | Good if you want Postgres branches |
+
+Why use dbsnap instead of plain seeds? Seeds are great for deterministic baseline data. dbsnap is useful after you have created an expensive local state: logged-in users, permissions, carts, feature flags, test fixtures, and app-specific rows that are tedious to rebuild manually.
+
+## FAQ
+
+### Is this a production backup tool?
+
+No. dbsnap is for disposable local development and test databases. Use real backup tooling for production.
+
+### Does it support PostgreSQL?
+
+Yes. PostgreSQL snapshots use `pg_dump` and `pg_restore`, or Docker fallback when a matching local PostgreSQL container is available.
+
+### Does it support SQLite?
+
+Yes. SQLite snapshots copy the database file and, when present, matching WAL/SHM sidecars.
+
+### Is restore destructive?
+
+Yes. Restore replaces the current local database state. Run `dbsnap doctor` first if you are unsure what database is active.
+
+### Why not just use pg_dump?
+
+You can. dbsnap wraps boring primitives with named snapshots, metadata, `.env` detection, Docker-aware PostgreSQL handling, SQLite support, restore target checks, and secret redaction.
+
+### Why not just seed?
+
+Use seeds for baseline data. Use dbsnap when the useful state is expensive to recreate or was created through UI/test flows.
+
+### Can I use it in CI?
+
+Yes, for disposable CI databases. Use non-interactive flags like `--yes`, `--json`, and `--dry-run` where appropriate. Do not point CI at shared or production-like databases.
+
+### Where are snapshots stored?
+
+By default in `.dbsnaps/<name>/` under the project root. You can change this with `--snapshots-dir <dir>`.
+
+### How do I avoid committing snapshots?
+
+Run `dbsnap init`; it adds the snapshot directory to `.gitignore`. Also avoid committing `.env`, SQLite database files, PostgreSQL dumps, and generated snapshot artifacts.
+
+### What should I do before restoring?
+
+Run `dbsnap doctor`, confirm `DATABASE_URL` points to the expected local database, and make sure no app/test process is actively writing to that database.
 
 ## Roadmap
 
-- MySQL adapter
-- Snapshot compression
-- Snapshot diffs
-- Test-runner fixtures
-- Better interactive TUI
-- Shell completions
+- Better benchmark docs and repeatable benchmark fixtures.
+- More example apps for Prisma, Drizzle, Playwright, and Vitest.
+- MySQL support.
+- Snapshot compression.
+- Faster PostgreSQL restore strategies where they can be implemented safely.
+- Shell completions.
+- Web docs later if the project grows beyond a README.
 
-## Good First Issues
-
-- Add more framework examples
-- Improve installation guidance for PostgreSQL client tools
-- Add adapter docs for a new database
-- Add shell completions
-- Add a short demo GIF
-
-## Known Limitations
+## Known limitations
 
 - PostgreSQL support depends on `pg_dump` / `pg_restore` locally or inside Docker.
-- Default tests mock command construction and do not require a real PostgreSQL server.
 - SQLite in-memory databases cannot be snapshotted.
-- `dbsnap` intentionally refuses remote-looking restores unless forced.
 - Restoring to a different target requires separate explicit confirmation.
-- Large local databases may take longer to save and restore.
+- Large local databases may take time to save and restore.
 - SQLite WAL sidecars are copied, but snapshots are most reliable when the app is not actively writing during `save`.
 
 ## Contributing
 
-See the [contributing guide](https://github.com/canblmz1/dbsnap/blob/main/CONTRIBUTING.md) and [security policy](https://github.com/canblmz1/dbsnap/blob/main/SECURITY.md).
+See the [contributing guide](https://github.com/canblmz1/dbsnap/blob/main/CONTRIBUTING.md), [security policy](https://github.com/canblmz1/dbsnap/blob/main/SECURITY.md), and [benchmark methodology](https://github.com/canblmz1/dbsnap/blob/main/docs/BENCHMARKS.md).
 
 ```bash
 pnpm install

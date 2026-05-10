@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0-beta.7
+
+Product and DX polish for the public beta.
+
+- Repositioned README around local database checkpoints for Prisma, Drizzle, Playwright, and Vitest.
+- Added stronger safety messaging, comparison guidance, FAQ, and copy-paste test runner examples.
+- Added Prisma + Playwright and Drizzle + Vitest example skeletons.
+- Added benchmark methodology and a safe local benchmark runner.
+- Added `NODE_ENV=production` safety blocking.
+- Improved package metadata and CLI help descriptions.
+
 ## 0.9.0-beta.6
 
 Release polish for the npm beta after the final audit pass.

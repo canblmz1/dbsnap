@@ -1,8 +1,10 @@
 # Roadmap
 
-`dbsnap` is a local development database snapshot tool for SQLite and local PostgreSQL workflows. It is not a production backup system.
+`dbsnap` is a local database checkpoint tool for Prisma, Drizzle, Playwright, Vitest, SQLite, and local PostgreSQL workflows. It is not a production backup system.
 
-## P1: Better Doctor
+## P1: Doctor Troubleshooting V2
+
+Status: baseline diagnostics shipped in `0.9.0-beta.7`; this is the next troubleshooting pass.
 
 Problem: users need a single command that explains why save/restore will or will not work on their machine.
 
@@ -34,6 +36,33 @@ Required tests:
 - PostgreSQL tool guidance is present when tools are missing
 
 Docs impact: README doctor section, PostgreSQL install guidance, troubleshooting docs.
+
+## P1: Benchmark Fixtures
+
+Problem: users need realistic performance expectations before trusting dbsnap in test and QA loops.
+
+Proposed API: no public API change.
+
+CLI syntax:
+
+```bash
+pnpm benchmark
+```
+
+Edge cases:
+
+- Never benchmark production-like URLs
+- Record local machine and database details with results
+- Keep SQLite and PostgreSQL cases separate
+- Do not compare against unrelated datasets
+
+Required tests:
+
+- Benchmark runner refuses remote PostgreSQL hosts
+- Benchmark runner refuses `NODE_ENV=production`
+- Benchmark output redacts credentials
+
+Docs impact: expand `docs/BENCHMARKS.md` with real measured results after running fixtures.
 
 ## P1: Demo GIF / asciinema Terminal Demo
 

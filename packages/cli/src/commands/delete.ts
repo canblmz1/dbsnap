@@ -7,8 +7,8 @@ import { readCliOptions } from "./options.js";
 export function registerDeleteCommand(program: Command): void {
   program
     .command("delete")
-    .description("Delete a saved snapshot")
-    .argument("<name>", "Snapshot name")
+    .description("Delete a saved checkpoint")
+    .argument("<name>", "Checkpoint name")
     .action(async function (this: Command, name: string) {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });

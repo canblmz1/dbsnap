@@ -1,6 +1,6 @@
 # Testing
 
-dbsnap is useful when a test suite needs the same expensive local database state repeatedly.
+dbsnap is useful when a test suite needs the same expensive local database checkpoint repeatedly.
 
 ## Vitest
 

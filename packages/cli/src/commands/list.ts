@@ -6,7 +6,7 @@ import { readCliOptions } from "./options.js";
 export function registerListCommand(program: Command): void {
   program
     .command("list")
-    .description("List saved database snapshots")
+    .description("List saved local database checkpoints")
     .action(async function (this: Command) {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });

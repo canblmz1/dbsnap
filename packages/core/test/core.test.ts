@@ -1,7 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { spawn } from "node:child_process";
 import { Readable, Writable } from "node:stream";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { requireSuccessfulSpawn } from "../src/utils/spawn.js";
 import {
@@ -49,6 +51,29 @@ async function write(projectRoot: string, relativePath: string, content: string)
   await fs.writeFile(target, content, "utf8");
 }
 
+async function runNodeScript(scriptPath: string, env: NodeJS.ProcessEnv): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+  return await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [scriptPath], {
+      cwd: path.dirname(scriptPath),
+      env,
+      shell: false,
+      windowsHide: true
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (exitCode) => {
+      resolve({ exitCode: exitCode ?? 1, stdout, stderr });
+    });
+  });
+}
+
 describe("core exports", () => {
   it("exports the public API", () => {
     expect(saveSnapshot).toBeTypeOf("function");
@@ -69,6 +94,29 @@ describe("core exports", () => {
     expect(DBSNAP_VERSION).toBe(corePackage.version);
     expect(DBSNAP_VERSION).toBe(cliPackage.version);
     expect(cliPackage.dependencies["@canblmz1/dbsnap-core"]).toBe(corePackage.version);
+  });
+
+  it("keeps npm package metadata focused on local database checkpoints", async () => {
+    const cliPackage = JSON.parse(await fs.readFile(new URL("../../cli/package.json", import.meta.url), "utf8"));
+    expect(cliPackage.description).toContain("Fast local database checkpoints");
+    for (const keyword of [
+      "database",
+      "snapshot",
+      "checkpoint",
+      "postgresql",
+      "sqlite",
+      "prisma",
+      "drizzle",
+      "playwright",
+      "vitest",
+      "testing",
+      "e2e",
+      "local-development",
+      "developer-tools",
+      "cli"
+    ]) {
+      expect(cliPackage.keywords).toContain(keyword);
+    }
   });
 });
 
@@ -559,6 +607,24 @@ describe("safety guard", () => {
     ).toThrow(SafetyError);
   });
 
+  it("blocks NODE_ENV=production unless explicitly forced", async () => {
+    const parsed = parseDatabaseUrl("file:./dev.db");
+    const safety = evaluateSafety(parsed, { resolvedSqlitePath: "dev.db", nodeEnv: "production" });
+    expect(safety.allowedByDefault).toBe(false);
+    expect(safety.reasons).toContain("NODE_ENV=production is set.");
+    expect(() =>
+      assertLocalDatabase(parsed, { operation: "save", resolvedSqlitePath: "dev.db", nodeEnv: "production" })
+    ).toThrow(SafetyError);
+
+    const root = await tempProject();
+    await write(root, ".env", "DATABASE_URL=file:./dev.db\nNODE_ENV=production\n");
+    await write(root, "dev.db", "users=10");
+    await expect(saveSnapshot("blocked", { projectRoot: root, processEnv: {} })).rejects.toThrow(SafetyError);
+    await expect(saveSnapshot("forced", { projectRoot: root, processEnv: {}, force: true })).resolves.toMatchObject({
+      name: "forced"
+    });
+  });
+
   it("allows force and preserves dry-run safety behavior in Node API", async () => {
     const root = await tempProject();
     await write(root, ".env", "DATABASE_URL=postgres://user:secret@db.example.com/app\n");
@@ -577,6 +643,21 @@ describe("safety guard", () => {
     expect(forced.dryRun).toBe(true);
     expect(JSON.stringify(forced)).not.toContain("secret");
     expect(JSON.stringify(forced)).not.toContain("postgres://user:secret");
+  });
+});
+
+describe("benchmark script", () => {
+  it("refuses unsafe DATABASE_URL values without leaking credentials", async () => {
+    const scriptPath = fileURLToPath(new URL("../../../scripts/benchmark.mjs", import.meta.url));
+    const result = await runNodeScript(scriptPath, {
+      ...process.env,
+      DATABASE_URL: "postgres://user:secret@db.example.com/app",
+      NODE_ENV: "test"
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("not local");
+    expect(result.stderr).not.toContain("secret");
   });
 });
 

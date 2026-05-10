@@ -7,10 +7,11 @@ export interface AssertLocalDatabaseOptions {
   operation?: "save" | "restore";
   snapshotName?: string;
   resolvedSqlitePath?: string;
+  nodeEnv?: string;
 }
 
 export function assertLocalDatabase(database: ParsedDatabaseUrl, options: AssertLocalDatabaseOptions = {}): SafetyCheckResult {
-  const result = evaluateSafety(database, { resolvedSqlitePath: options.resolvedSqlitePath });
+  const result = evaluateSafety(database, { resolvedSqlitePath: options.resolvedSqlitePath, nodeEnv: options.nodeEnv });
   if (result.allowedByDefault || options.force) {
     return result;
   }

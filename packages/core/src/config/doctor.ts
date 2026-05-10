@@ -143,7 +143,7 @@ export async function getDoctorReport(options: { cwd?: string; projectRoot?: str
     }
     database = parseDatabaseUrl(databaseUrl);
     const resolvedSqlitePath = database.type === "sqlite" ? resolveSqlitePath(projectRoot, database) : undefined;
-    safety = evaluateSafety(database, { resolvedSqlitePath });
+    safety = evaluateSafety(database, { resolvedSqlitePath, nodeEnv: env.values.NODE_ENV });
     if (database.type === "sqlite" && resolvedSqlitePath) {
       sqlite = await inspectSqliteDatabase(resolvedSqlitePath);
       if (!sqlite.exists) warnings.push(`SQLite database file does not exist yet: ${sqlite.path}`);

@@ -1,0 +1,22 @@
+{
+  "name": "dbsnap-prisma-playwright-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:snap": "dbsnap save e2e-ready",
+    "db:restore": "dbsnap restore e2e-ready --yes",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@canblmz1/dbsnap": "0.9.0-beta.7",
+    "@playwright/test": "^1.57.0",
+    "prisma": "^6.19.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "dbsnap-drizzle-vitest-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:snap": "dbsnap save test-ready",
+    "db:restore": "dbsnap restore test-ready --yes",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@canblmz1/dbsnap": "0.9.0-beta.7",
+    "drizzle-kit": "^0.31.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.5.0",
+    "drizzle-orm": "^0.45.0"
+  }
+}

@@ -6,7 +6,7 @@ import { readCliOptions } from "./options.js";
 export function registerPruneCommand(program: Command): void {
   program
     .command("prune")
-    .description("Delete old snapshots by retention policy")
+    .description("Delete old checkpoints by retention policy")
     .option("--keep-last <count>", "Keep the newest N snapshots", parseNonNegativeInteger)
     .option("--older-than <duration>", "Delete snapshots older than a duration such as 7d, 12h, or 30m")
     .action(async function (this: Command) {

@@ -19,7 +19,7 @@ export function createProgram(): Command {
   const program = new Command();
   program
     .name("dbsnap")
-    .description("Time travel for your local development database.")
+    .description("Fast local database checkpoints for Prisma, Drizzle, Playwright and Vitest.")
     .version(DBSNAP_VERSION)
     .option("--json", "Print JSON output where supported")
     .option("--yes", "Skip confirmation prompts")
@@ -29,7 +29,7 @@ export function createProgram(): Command {
     .option("--snapshots-dir <dir>", "Snapshots directory")
     .option("--docker", "Use PostgreSQL client tools inside a matching Docker container")
     .option("--no-docker", "Do not fall back to Docker for PostgreSQL client tools")
-    .option("--force-i-know-what-i-am-doing", "Allow save/restore to a database dbsnap considers risky")
+    .option("--force-i-know-what-i-am-doing", "Dangerously allow save/restore to a database dbsnap considers risky")
     .option("--allow-different-target", "Allow restore when the snapshot was saved from a different database target");
 
   registerInitCommand(program);

@@ -18,7 +18,8 @@ export async function saveSnapshot(name: string, options: DbsnapBaseOptions = {}
     force: options.force,
     operation: "save",
     snapshotName,
-    resolvedSqlitePath
+    resolvedSqlitePath,
+    nodeEnv: config.env.values.NODE_ENV
   });
   const snapshotDir = await createSnapshotDir(config.snapshotsDir, snapshotName, { dryRun: options.dryRun });
 

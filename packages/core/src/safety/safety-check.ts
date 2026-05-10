@@ -27,9 +27,13 @@ const RISKY_HOST_PATTERNS = [
 ];
 const RISKY_NAME_PATTERN = /(^|[_\-.\/\\])(prod|production|staging|live)([_\-.\/\\]|$)/i;
 
-export function evaluateSafety(database: ParsedDatabaseUrl, options: { resolvedSqlitePath?: string } = {}): SafetyCheckResult {
+export function evaluateSafety(database: ParsedDatabaseUrl, options: { resolvedSqlitePath?: string; nodeEnv?: string } = {}): SafetyCheckResult {
   const reasons: string[] = [];
   const warnings: string[] = [];
+
+  if (options.nodeEnv?.toLowerCase() === "production") {
+    reasons.push("NODE_ENV=production is set.");
+  }
 
   if (database.type === "sqlite") {
     const databaseNameOrPath = options.resolvedSqlitePath ?? database.sqlitePath;

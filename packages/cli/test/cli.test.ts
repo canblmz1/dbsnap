@@ -63,7 +63,7 @@ describe("CLI", () => {
     await expect(program.parseAsync(["node", "dbsnap", "--help"])).rejects.toMatchObject({
       code: "commander.helpDisplayed"
     });
-    expect(output).toContain("Time travel for your local development database");
+    expect(output).toContain("Fast local database checkpoints for Prisma, Drizzle, Playwright and Vitest");
     expect(output).toContain("save");
     expect(output).toContain("restore");
     expect(output).toContain("verify");

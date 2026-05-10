@@ -4,7 +4,7 @@ Use these as GitHub issue bodies when splitting the next release.
 
 ## P0: Verify Snapshots
 
-Status: shipped in `0.9.0-beta.5`.
+Status: shipped in `0.9.0-beta.5` and still covered in current beta builds.
 
 - [x] Add `dbsnap verify <name>`
 - [x] Support `--json`
@@ -15,7 +15,7 @@ Status: shipped in `0.9.0-beta.5`.
 
 ## P1: Prune Snapshots
 
-Status: shipped in `0.9.0-beta.5`.
+Status: shipped in `0.9.0-beta.5` and still covered in current beta builds.
 
 - [x] Add `dbsnap prune`
 - [x] Support `--keep-last 5`
@@ -37,7 +37,7 @@ Status: planned.
 
 ## P1: Better Doctor
 
-Status: partially shipped in `0.9.0-beta.5`.
+Status: partially shipped in `0.9.0-beta.5` and expanded in later beta builds.
 
 - [x] Show `pg_dump` and `pg_restore` versions when available
 - [x] Show `DATABASE_URL` source
