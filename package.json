@@ -1,6 +1,6 @@
 {
   "name": "dbsnap-repo",
-  "version": "0.9.0-beta.7",
+  "version": "0.9.0-beta.8",
   "private": true,
   "description": "Fast local database checkpoints for Prisma, Drizzle, Playwright and Vitest.",
   "license": "MIT",

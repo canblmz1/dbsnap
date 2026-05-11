@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0-beta.8
+
+- Add manual GitHub Actions release workflow. - Add safe version bump script for root, core, CLI, lockfile, and dbsnap metadata. - Improve CLI JSON error handling for automation. - Prevent non-interactive destructive prompts from hanging in CI. - Strengthen PostgreSQL credential redaction in logs and JSON output. - Improve release checklist documentation.
+
 ## 0.9.0-beta.7
 
 Product and DX polish for the public beta.
