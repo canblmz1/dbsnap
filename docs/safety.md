@@ -42,7 +42,7 @@ Likewise, `--allow-different-target` does not bypass remote or production-like d
 
 ## Secret Redaction
 
-dbsnap redacts database passwords and token-like query parameters in normal and debug output.
+dbsnap redacts PostgreSQL usernames, passwords, and token-like query parameters in normal, JSON, and debug output.
 
 ## Git Hygiene
 

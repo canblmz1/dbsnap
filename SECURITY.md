@@ -21,7 +21,7 @@ Security reports are most useful when they involve:
 - Restore refuses snapshots saved from a different database target unless explicitly allowed.
 - The risky-target override is `--force-i-know-what-i-am-doing`.
 - The different-target override is `--allow-different-target`.
-- Database URLs are redacted before printing.
+- Database URLs are redacted before printing, including usernames, passwords, and common secret query parameters.
 - PostgreSQL passwords are passed through environment variables, not command-line arguments.
 - Child processes use argument arrays with `shell: false`.
 - `dbsnap init` adds the snapshot directory to `.gitignore`.

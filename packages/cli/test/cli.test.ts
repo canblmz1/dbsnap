@@ -4,7 +4,7 @@ import os from "node:os";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DBSNAP_VERSION, writeMetadata } from "@canblmz1/dbsnap-core";
-import { createProgram, isDirectCliInvocation } from "../src/index.js";
+import { createProgram, isDirectCliInvocation, main } from "../src/index.js";
 
 let originalCwd: string;
 let originalDatabaseUrl: string | undefined;
@@ -32,6 +32,39 @@ async function captureStdout(task: () => Promise<void>): Promise<string> {
     process.stdout.write = originalWrite;
   }
   return output;
+}
+
+async function captureOutput(task: () => Promise<void>): Promise<{ stdout: string; stderr: string }> {
+  let stdout = "";
+  let stderr = "";
+  const originalStdoutWrite = process.stdout.write;
+  const originalStderrWrite = process.stderr.write;
+  process.stdout.write = ((chunk: string | Uint8Array) => {
+    stdout += chunk.toString();
+    return true;
+  }) as typeof process.stdout.write;
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    stderr += chunk.toString();
+    return true;
+  }) as typeof process.stderr.write;
+  try {
+    await task();
+  } finally {
+    process.stdout.write = originalStdoutWrite;
+    process.stderr.write = originalStderrWrite;
+  }
+  return { stdout, stderr };
+}
+
+async function withStdinTty<T>(isTTY: boolean, task: () => Promise<T>): Promise<T> {
+  const descriptor = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
+  Object.defineProperty(process.stdin, "isTTY", { configurable: true, value: isTTY });
+  try {
+    return await task();
+  } finally {
+    if (descriptor) Object.defineProperty(process.stdin, "isTTY", descriptor);
+    else Reflect.deleteProperty(process.stdin, "isTTY");
+  }
 }
 
 beforeEach(() => {
@@ -226,6 +259,33 @@ describe("CLI", () => {
     await expect(createProgram().parseAsync(["node", "dbsnap", "--json", "restore", "local"])).rejects.toThrow(
       /without --yes/
     );
+  });
+
+  it("prints valid JSON errors from the real CLI entrypoint in --json mode", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+
+    const output = await captureOutput(async () => {
+      await main(["node", "dbsnap", "--json", "restore"]);
+    });
+
+    expect(output.stderr).toBe("");
+    const parsed = JSON.parse(output.stdout);
+    expect(parsed.ok).toBe(false);
+    expect(parsed.error.code).toBe("SNAPSHOT_NAME_REQUIRED");
+    expect(process.exitCode).toBe(1);
+  });
+
+  it("does not prompt forever in non-interactive destructive commands", async () => {
+    const root = await tempProject();
+    process.chdir(root);
+    await write(root, ".dbsnaps/local/metadata.json", "{}");
+
+    await withStdinTty(false, async () => {
+      await expect(createProgram().parseAsync(["node", "dbsnap", "delete", "local"])).rejects.toThrow(
+        /non-interactive/
+      );
+    });
   });
 
   it("blocks different-target restore in non-interactive JSON mode", async () => {

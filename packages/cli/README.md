@@ -222,7 +222,7 @@ dbsnap is built for local development and test databases, not production backups
 - `NODE_ENV=production` is blocked by default.
 - Restore checks whether the snapshot was saved from a different database target.
 - JSON/non-interactive restore refuses to wait for prompts.
-- Database URLs and known secret fields are redacted in logs, metadata output, and debug output.
+- Database URLs and known secret fields are redacted in logs, JSON output, metadata output, and debug output.
 - `dbsnap init` adds the snapshots directory to `.gitignore`.
 
 Use `dbsnap doctor` before restore when you are not sure what dbsnap will touch:
@@ -241,6 +241,17 @@ npx dbsnap restore snapshot-name --allow-different-target --yes
 `--force-i-know-what-i-am-doing` is only for the risky/remote database guard. `--allow-different-target` is only for restoring a snapshot into a different local database target. One does not bypass the other.
 
 Do not commit `.dbsnaps/`, `.env`, local SQLite files, PostgreSQL dumps, or snapshot artifacts.
+
+## Quick Troubleshooting
+
+| Symptom | What to check |
+|---|---|
+| `DATABASE_URL` is missing | Run `dbsnap doctor` and set `DATABASE_URL` in your shell, `.env`, `.env.local`, or `dbsnap.config.ts` |
+| PostgreSQL save/restore cannot find tools | Install `pg_dump` and `pg_restore`, or run with `--docker` when your local PostgreSQL is in Docker |
+| Docker fallback does not work | Make sure Docker Desktop or the Docker daemon is running and only one matching PostgreSQL container exposes the target port |
+| SQLite restore looks stale | Stop the app/test process before saving; WAL mode uses `-wal` and `-shm` sidecars that dbsnap copies when present |
+| CI or scripts hang waiting for input | Use explicit snapshot names plus `--yes` or `--dry-run`; `--json` mode does not prompt |
+| Snapshot name is rejected | Use only letters, numbers, dots, dashes, and underscores, for example `checkout-ready_1` |
 
 ## CLI Reference
 

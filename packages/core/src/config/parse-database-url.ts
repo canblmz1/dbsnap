@@ -153,6 +153,7 @@ export function sanitizeParsedDatabaseUrl(database: ParsedDatabaseUrl): ParsedDa
   return {
     ...database,
     raw: database.redacted,
+    username: undefined,
     password: undefined,
     searchParams
   };

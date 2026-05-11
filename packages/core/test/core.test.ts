@@ -175,12 +175,25 @@ describe("database URL parsing and redaction", () => {
 
   it("redacts passwords and tokens", () => {
     const redacted = redactDatabaseUrl("postgres://user:secret@localhost/app?token=abc&password=def");
-    expect(redacted).toContain("user:***@localhost");
+    expect(redacted).toContain("***:***@localhost");
+    expect(redacted).not.toContain("user");
     expect(redacted).not.toContain("secret");
     expect(redacted).not.toContain("abc");
     expect(redacted).not.toContain("def");
     expect(redactSecrets("PGPASSWORD=hunter2 token=abc")).not.toContain("hunter2");
     expect(redactSecrets('{"password":"hunter2","token":"abc"}')).not.toContain("hunter2");
+  });
+
+  it("redacts encoded PostgreSQL credentials and secret query parameters", () => {
+    const redacted = redactDatabaseUrl(
+      "postgresql://encoded%40user:p%40ss%2Fword@localhost:5432/app_dev?sslmode=disable&api_key=abc123"
+    );
+
+    expect(redacted).toContain("***:***@localhost");
+    expect(redacted).toContain("sslmode=disable");
+    expect(redacted).not.toContain("encoded");
+    expect(redacted).not.toContain("p%40ss");
+    expect(redacted).not.toContain("abc123");
   });
 });
 
@@ -642,6 +655,7 @@ describe("safety guard", () => {
     const forced = await restoreSnapshot("pg", { projectRoot: root, dryRun: true, force: true });
     expect(forced.dryRun).toBe(true);
     expect(JSON.stringify(forced)).not.toContain("secret");
+    expect(JSON.stringify(forced)).not.toContain("user");
     expect(JSON.stringify(forced)).not.toContain("postgres://user:secret");
   });
 });

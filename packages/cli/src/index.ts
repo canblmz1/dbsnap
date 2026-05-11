@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
-import { DBSNAP_VERSION, formatError } from "@canblmz1/dbsnap-core";
+import { DBSNAP_VERSION, formatError, isDbsnapError, redactSecrets } from "@canblmz1/dbsnap-core";
 import { registerDeleteCommand } from "./commands/delete.js";
 import { registerDoctorCommand } from "./commands/doctor.js";
 import { registerInfoCommand } from "./commands/info.js";
@@ -52,9 +52,61 @@ export async function main(argv = process.argv): Promise<void> {
     await program.parseAsync(argv);
   } catch (error) {
     const debug = Boolean(program.opts<{ debug?: boolean }>().debug);
+    const json = Boolean(program.opts<{ json?: boolean }>().json);
+    if (json) {
+      process.stdout.write(`${JSON.stringify(jsonError(error), null, 2)}\n`);
+      process.exitCode = 1;
+      return;
+    }
     process.stderr.write(`Error ${formatError(error, debug)}\n`);
     process.exitCode = 1;
   }
+}
+
+function jsonError(error: unknown): { ok: false; error: Record<string, unknown> } {
+  if (isDbsnapError(error)) {
+    return {
+      ok: false,
+      error: sanitizeForJson({
+        name: error.name,
+        code: error.code,
+        message: error.message,
+        details: error.details
+      }) as Record<string, unknown>
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      ok: false,
+      error: sanitizeForJson({
+        name: error.name,
+        message: `${error.message}\nRun with --debug for more detail.`
+      }) as Record<string, unknown>
+    };
+  }
+
+  return {
+    ok: false,
+    error: { name: "Error", message: redactSecrets(String(error)) }
+  };
+}
+
+function sanitizeForJson(value: unknown, key?: string): unknown {
+  if (key && /password|pass|pwd|token|access_token|refresh_token|api_key|apikey|secret|client_secret|auth/i.test(key)) {
+    return "***";
+  }
+  if (typeof value === "string") return redactSecrets(value);
+  if (Array.isArray(value)) return value.map((item) => sanitizeForJson(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([entryKey, entryValue]) => [
+        entryKey,
+        sanitizeForJson(entryValue, entryKey)
+      ])
+    );
+  }
+  return value;
 }
 
 function realpathIfPossible(targetPath: string): string {

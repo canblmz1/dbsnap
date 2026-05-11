@@ -1,7 +1,13 @@
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { UserError } from "@canblmz1/dbsnap-core";
 
 export async function confirm(message: string, defaultValue = false): Promise<boolean> {
+  if (!input.isTTY) {
+    throw new UserError("Cannot prompt in a non-interactive terminal. Re-run with --yes or --dry-run.", {
+      code: "NON_INTERACTIVE_CONFIRMATION_REQUIRED"
+    });
+  }
   const rl = createInterface({ input, output });
   try {
     const suffix = defaultValue ? "Y/n" : "y/N";
@@ -18,6 +24,11 @@ export async function selectSnapshot(message: string, names: string[]): Promise<
     throw new Error("No snapshots found.");
   }
   if (names.length === 1) return names[0];
+  if (!input.isTTY) {
+    throw new UserError("Cannot select a snapshot in a non-interactive terminal. Pass the snapshot name explicitly.", {
+      code: "NON_INTERACTIVE_SNAPSHOT_SELECTION_REQUIRED"
+    });
+  }
 
   output.write(`${message}\n`);
   names.forEach((name, index) => output.write(`  ${index + 1}. ${name}\n`));

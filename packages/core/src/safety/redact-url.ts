@@ -15,10 +15,8 @@ const SECRET_QUERY_KEYS = [
 function redactParsedUrl(value: string): string | undefined {
   try {
     const parsed = new URL(value);
+    if (parsed.username) parsed.username = "***";
     if (parsed.password) parsed.password = "***";
-    if (parsed.username && parsed.password === "***") {
-      parsed.username = encodeURIComponent(decodeURIComponent(parsed.username));
-    }
     for (const key of [...parsed.searchParams.keys()]) {
       if (SECRET_QUERY_KEYS.includes(key.toLowerCase())) {
         parsed.searchParams.set(key, "***");
@@ -37,7 +35,7 @@ export function redactDatabaseUrl(value: string | undefined): string {
   if (/^(postgres|postgresql):\/\//i.test(trimmed)) {
     const parsed = redactParsedUrl(trimmed);
     if (parsed) return parsed;
-    return trimmed.replace(/\/\/([^/\s:@]+):([^@\s/]+)@/g, "//$1:***@");
+    return trimmed.replace(/\/\/([^/\s:@]+):([^@\s/]+)@/g, "//***:***@");
   }
 
   if (/^(file:|sqlite:)/i.test(trimmed)) {
@@ -49,7 +47,7 @@ export function redactDatabaseUrl(value: string | undefined): string {
 
 export function redactSecrets(value: string): string {
   let output = value;
-  output = output.replace(/\b(postgres(?:ql)?:\/\/[^:\s/@]+):([^@\s/]+)@/gi, "$1:***@");
+  output = output.replace(/\b(postgres(?:ql)?:\/\/)([^:\s/@]+):([^@\s/]+)@/gi, "$1***:***@");
   output = output.replace(
     /([?&](?:password|pass|pwd|token|access_token|refresh_token|api_key|apikey|secret|client_secret|auth)=)[^&"',}\]\s]+/gi,
     "$1***"

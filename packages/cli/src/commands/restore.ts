@@ -13,6 +13,11 @@ export function registerRestoreCommand(program: Command): void {
       const options = readCliOptions(this);
       const reporter = createReporter({ json: options.json });
       let snapshotName = name;
+      if (!snapshotName && options.json) {
+        throw new UserError("Snapshot name is required in --json mode. Re-run with `dbsnap restore <name> --json`.", {
+          code: "SNAPSHOT_NAME_REQUIRED"
+        });
+      }
       if (!snapshotName) {
         const snapshots = await listSnapshots(options);
         snapshotName = await selectSnapshot("Select a snapshot to restore:", snapshots.snapshots.map((snapshot) => snapshot.name));
