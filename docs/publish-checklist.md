@@ -8,6 +8,41 @@
 - [ ] Add a `CHANGELOG.md` entry for the version
 - [ ] Run the version alignment test with `pnpm test`
 
+You can update these files locally with:
+
+```bash
+pnpm version:bump 0.9.0-beta.8
+pnpm install
+```
+
+Or use the manual GitHub Actions release workflow after configuring the `NPM_TOKEN` repository secret.
+
+## Manual GitHub Actions Release
+
+The `Release` workflow is intentionally manual. It does not publish on every push.
+
+Required repository secret:
+
+- `NPM_TOKEN`: npm automation token with publish access to `@canblmz1/dbsnap-core` and `@canblmz1/dbsnap`
+
+Workflow inputs:
+
+- `version`: exact version to publish, for example `0.9.0-beta.8`
+- `npm_tag`: `beta` for beta releases or `latest` for stable releases
+- `promote_to_latest`: also move the `latest` dist-tag to this version
+- `release_notes`: Markdown used in `CHANGELOG.md` and the GitHub Release
+
+The workflow:
+
+1. Validates the version and checks it is not already published.
+2. Bumps package versions and `DBSNAP_VERSION`.
+3. Updates the lockfile.
+4. Runs install, typecheck, tests, build, and pack smoke.
+5. Commits the release version and creates `v<version>`.
+6. Publishes core first, then CLI.
+7. Runs a clean npm consumer smoke test.
+8. Creates the GitHub Release.
+
 ## Pre-Publish Commands
 
 - [ ] `pnpm install`
